@@ -3357,7 +3357,7 @@
 .miniplayer-info-bar {
   background: #181818;
   padding: 8px 12px;
-  display: flex;
+  display: none;
   justify-content: space-between;
   align-items: center;
   gap: 8px;
