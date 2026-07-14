@@ -97,17 +97,14 @@ const Home = () => {
 
   // Reset page when category changes and fetch fresh data
   useEffect(() => {
-    const shouldFetch = videos.length === 0 || selectedCategory !== lastFetchedCategory;
-    if (shouldFetch) {
-      setPage(1);
-      if (mountedRef.current) setIsTransitioning(true);
-      const t = setTimeout(() => {
-        if (mountedRef.current) setIsTransitioning(false);
-      }, 280);
-      fetchTrending(selectedCategory, 1, false);
-      return () => clearTimeout(t);
-    }
-  }, [selectedCategory, lastFetchedCategory, videos.length, fetchTrending]);
+    setPage(1);
+    if (mountedRef.current) setIsTransitioning(true);
+    const t = setTimeout(() => {
+      if (mountedRef.current) setIsTransitioning(false);
+    }, 280);
+    fetchTrending(selectedCategory, 1, false);
+    return () => clearTimeout(t);
+  }, [selectedCategory, fetchTrending]);
 
   // Preload next batch of videos aggressively in background
   const fetchMoreVideos = useCallback(async () => {
@@ -146,14 +143,6 @@ const Home = () => {
     return () => observer.disconnect();
   }, [fetchMoreVideos, videos.length, isLoading]);
 
-  // Proactive background preload: as soon as videos load, start fetching next page
-  useEffect(() => {
-    if (videos.length > 0 && page === 1 && !isFetchingMore && !isLoading) {
-      // Delay slightly to not block render
-      const t = setTimeout(() => fetchMoreVideos(), 500);
-      return () => clearTimeout(t);
-    }
-  }, [videos.length, page]); // eslint-disable-line
 
   const handleShortClick = (short) => {
     setActiveShortId(short.videoId);

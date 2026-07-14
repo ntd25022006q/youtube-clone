@@ -160,10 +160,10 @@ export const findFastestInstance = async (candidateList) => {
 const FALLBACK_INSTANCES = [
   "", // Local Vite proxy fallback (handles CORS issues in development)
   "https://yt.chocolatemoo53.com", // Currently working instance
+  "https://invidious.flokinet.to", // Working fallback
   "https://inv.thepixora.com",
   "https://invidious.projectsegfau.lt",
-  "https://yewtu.be",
-  "https://invidious.flokinet.to"
+  "https://yewtu.be"
 ];
 
 // Formatting helpers for Vietnamese Language
@@ -641,7 +641,7 @@ const getRelatedVideosRelevance = (playingVideo, candidates) => {
 
 export const YoutubeProvider = ({ children }) => {
   const [instances, setInstances] = useState(FALLBACK_INSTANCES);
-  const [activeInstance, setActiveInstance] = useState("https://inv.thepixora.com");
+  const [activeInstance, setActiveInstance] = useState("https://yt.chocolatemoo53.com");
   
   // Cache of channel avatars to resolve missing ones
   const [channelAvatars, setChannelAvatars] = useState(() => {
@@ -665,7 +665,7 @@ export const YoutubeProvider = ({ children }) => {
   const [relatedSearchPage, setRelatedSearchPage] = useState(1);
   const [homeShorts, setHomeShorts] = useState([]);
   const [hasMoreChannelVideos, setHasMoreChannelVideos] = useState(true);
-  const [activeQueries, setActiveQueries] = useState([]);
+  // activeQueries is now handled via a ref to prevent unnecessary re-renders
 
   const pushHistoryState = (page, video = null, channel = null, query = "") => {
     let url = "/";
@@ -798,6 +798,36 @@ export const YoutubeProvider = ({ children }) => {
     localStorage.setItem("yt_background_page", backgroundPage);
   }, [backgroundPage]);
 
+  // Refs to store latest states for stable callbacks
+  const watchHistoryRef = useRef(watchHistory);
+  const likedVideosRef = useRef(likedVideos);
+  const subscriptionsRef = useRef(subscriptions);
+  const activeQueriesRef = useRef([]);
+  const trendingAbortController = useRef(null);
+  const searchAbortController = useRef(null);
+  const activeInstanceRef = useRef(activeInstance);
+  const instancesRef = useRef(instances);
+
+  useEffect(() => {
+    watchHistoryRef.current = watchHistory;
+  }, [watchHistory]);
+
+  useEffect(() => {
+    likedVideosRef.current = likedVideos;
+  }, [likedVideos]);
+
+  useEffect(() => {
+    subscriptionsRef.current = subscriptions;
+  }, [subscriptions]);
+
+  useEffect(() => {
+    activeInstanceRef.current = activeInstance;
+  }, [activeInstance]);
+
+  useEffect(() => {
+    instancesRef.current = instances;
+  }, [instances]);
+
   useEffect(() => {
     if (activeVideo) {
       localStorage.setItem("yt_active_video", JSON.stringify(activeVideo));
@@ -839,10 +869,17 @@ export const YoutubeProvider = ({ children }) => {
             .map((item) => item[1].uri || `https://${item[0]}`);
           
           if (domains.length > 0) {
-            setInstances(domains);
-            const fastest = await findFastestInstance([...domains, ...FALLBACK_INSTANCES]);
+            const merged = Array.from(new Set([...domains, ...FALLBACK_INSTANCES]));
+            setInstances(merged);
+            const fastest = await findFastestInstance(merged);
+            setActiveInstance(fastest);
+          } else {
+            const fastest = await findFastestInstance(FALLBACK_INSTANCES);
             setActiveInstance(fastest);
           }
+        } else {
+          const fastest = await findFastestInstance(FALLBACK_INSTANCES);
+          setActiveInstance(fastest);
         }
       } catch (e) {
         console.warn("Failed to load instances list, using fallbacks:", e);
@@ -855,7 +892,7 @@ export const YoutubeProvider = ({ children }) => {
   }, []);
 
   // Helper to fetch from Invidious with automatic failover, racing concurrent fetches, and 5-min caching
-  const fetchFromInvidious = async (path, validate = null) => {
+  const fetchFromInvidious = useCallback(async (path, validate = null, parentSignal = null) => {
     const ENGLISH_CHANNELS = [
       "fireship", "mkbhd", "mrbeast", "lofigirl", "lofi girl", "marques brownlee", 
       "ucsjbtgtlrdami-tdgpuv9wq", "ucbjycsmduvyelgt1gsryfw", "ucx6oamysswnlfqy9ovgyww", "ucsj4gkvc6nrvii8umztf0ow"
@@ -880,7 +917,7 @@ export const YoutubeProvider = ({ children }) => {
       }
     }
 
-    const prioritizedInstances = [activeInstance, ...instances.filter(i => i !== activeInstance)].slice(0, 6);
+    const prioritizedInstances = [activeInstanceRef.current, ...instancesRef.current.filter(i => i !== activeInstanceRef.current)].slice(0, 3);
 
     const fetchFromSingle = async (instance, signal) => {
       const response = await fetch(`${instance}${localizedPath}`, {
@@ -905,6 +942,18 @@ export const YoutubeProvider = ({ children }) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
+    const onAbort = () => {
+      controller.abort();
+    };
+
+    if (parentSignal) {
+      if (parentSignal.aborted) {
+        clearTimeout(timeoutId);
+        throw new Error("Aborted by parent signal");
+      }
+      parentSignal.addEventListener("abort", onAbort);
+    }
+
     try {
       const promises = prioritizedInstances.map(inst => fetchFromSingle(inst, controller.signal));
       const result = await Promise.any(promises);
@@ -919,10 +968,16 @@ export const YoutubeProvider = ({ children }) => {
       };
       return result;
     } catch (err) {
+      if (parentSignal && parentSignal.aborted) {
+        throw new Error("Aborted by parent signal", { cause: err });
+      }
       console.warn("Parallel race failed or timed out, trying sequential fallback...", err);
       // Fallback sequentially to remaining instances
-      const remainingInstances = instances.filter(i => !prioritizedInstances.includes(i));
+      const remainingInstances = instancesRef.current.filter(i => !prioritizedInstances.includes(i));
       for (const instance of remainingInstances.slice(0, 3)) {
+        if (parentSignal && parentSignal.aborted) {
+          throw new Error("Aborted by parent signal", { cause: err });
+        }
         try {
           const fallbackController = new AbortController();
           const fallbackTimeout = setTimeout(() => fallbackController.abort(), 1500);
@@ -941,8 +996,11 @@ export const YoutubeProvider = ({ children }) => {
       throw err || new Error("All instances failed");
     } finally {
       clearTimeout(timeoutId);
+      if (parentSignal) {
+        parentSignal.removeEventListener("abort", onAbort);
+      }
     }
-  };
+  }, []);
 
 
   const avatarQueue = useRef([]);
@@ -1209,10 +1267,17 @@ export const YoutubeProvider = ({ children }) => {
   };
 
   // API Call: Fetch trending feed for Home page
-  const fetchTrending = async (category = "Tất cả", page = 1, append = false) => {
+  const fetchTrending = useCallback(async (category = "Tất cả", page = 1, append = false) => {
     if (!append) {
+      if (trendingAbortController.current) {
+        trendingAbortController.current.abort();
+      }
+      trendingAbortController.current = new AbortController();
       setIsLoading(true);
     }
+    
+    const signal = trendingAbortController.current?.signal;
+
     try {
       const queries = {
         "Tất cả": [
@@ -1338,7 +1403,7 @@ export const YoutubeProvider = ({ children }) => {
           const catScores = {};
           const channelScores = {};
           
-          (watchHistory || []).forEach(v => {
+          (watchHistoryRef.current || []).forEach(v => {
             if (v.category) {
               catScores[v.category] = (catScores[v.category] || 0) + 1;
             }
@@ -1352,8 +1417,8 @@ export const YoutubeProvider = ({ children }) => {
           // Sort channels by frequency
           const sortedChannels = Object.keys(channelScores).sort((a, b) => channelScores[b] - channelScores[a]);
 
-          // Pick up to 2 top categories
-          const personalCatsToUse = sortedCats.slice(0, 2);
+          // Pick up to 1 top category
+          const personalCatsToUse = sortedCats.slice(0, 1);
           personalCatsToUse.forEach(cat => {
             const catQueries = queries[cat];
             if (catQueries && catQueries.length > 0) {
@@ -1367,26 +1432,27 @@ export const YoutubeProvider = ({ children }) => {
             selectedQueries.push(`${sortedChannels[0]} mới nhất`);
           }
 
-          // Fill up to 6 queries using general trending ones
+          // Fill up to 2 queries total
           const allQueriesList = [...queryOptions];
           const remainingQueries = allQueriesList.filter(q => !selectedQueries.includes(q));
           const shuffledRemaining = remainingQueries.sort(() => Math.random() - 0.5);
-          const needed = 6 - selectedQueries.length;
-          selectedQueries = [...selectedQueries, ...shuffledRemaining.slice(0, needed)];
+          const needed = 2 - selectedQueries.length;
+          selectedQueries = [...selectedQueries, ...shuffledRemaining.slice(0, Math.max(0, needed))];
         } else {
-          // Specific category: pick 5 queries
-          selectedQueries = [...queryOptions].sort(() => Math.random() - 0.5).slice(0, 5);
+          // Specific category: pick 2 queries
+          selectedQueries = [...queryOptions].sort(() => Math.random() - 0.5).slice(0, 2);
         }
 
         const queriesToFetch = selectedQueries.map(q => ({ q, pageNum: 1 }));
-        setActiveQueries(selectedQueries);
+        activeQueriesRef.current = selectedQueries;
         
         const fetchSingleQuery = async (item) => {
           try {
             // Sort by views and restrict to last month for viral content
             const { data, instance } = await fetchFromInvidious(
               `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views&date=month`,
-              (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId)
+              (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId),
+              signal
             );
             return { data, instance };
           } catch (e) {
@@ -1398,7 +1464,7 @@ export const YoutubeProvider = ({ children }) => {
         results = await Promise.all(queriesToFetch.map(fetchSingleQuery));
       } else {
         // Scroll append: fetch page 'page' of the active queries
-        const queriesList = activeQueries.length > 0 ? activeQueries : queryOptions;
+        const queriesList = activeQueriesRef.current.length > 0 ? activeQueriesRef.current : queryOptions;
         const shuffled = [...queriesList].sort(() => Math.random() - 0.5);
         const queriesToFetch = shuffled.slice(0, 2).map(q => ({ q, pageNum: page }));
         
@@ -1406,7 +1472,8 @@ export const YoutubeProvider = ({ children }) => {
           try {
             const { data, instance } = await fetchFromInvidious(
               `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views&date=month`,
-              (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId)
+              (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId),
+              signal
             );
             return { data, instance };
           } catch (e) {
@@ -1418,6 +1485,8 @@ export const YoutubeProvider = ({ children }) => {
         results = await Promise.all(queriesToFetch.map(fetchSingleQuery));
       }
       
+      if (signal?.aborted) return;
+
       let listOfLists = [];
       results.forEach(res => {
         if (!res) return;
@@ -1458,7 +1527,7 @@ export const YoutubeProvider = ({ children }) => {
         seenIds.add(v.id);
         return true;
       });
-      const personalized = getPersonalizedVideos(uniqueMapped, watchHistory, likedVideos, subscriptions, category);
+      const personalized = getPersonalizedVideos(uniqueMapped, watchHistoryRef.current, likedVideosRef.current, subscriptionsRef.current, category);
       let finalVideos = personalized;
       
       if (append) {
@@ -1472,6 +1541,7 @@ export const YoutubeProvider = ({ children }) => {
         setLastFetchedCategory(category);
       }
     } catch (e) {
+      if (signal?.aborted) return;
       console.warn("Failed to fetch live feed", e);
       if (!append) {
         setVideos([]);
@@ -1481,18 +1551,28 @@ export const YoutubeProvider = ({ children }) => {
         setIsLoading(false);
       }
     }
-  };
+  }, [fetchFromInvidious]);
 
   // API Call: Fetch search results
-  const fetchSearchResults = async (query) => {
+  const fetchSearchResults = useCallback(async (query) => {
     pushHistoryState("search", null, null, query);
+    
+    if (searchAbortController.current) {
+      searchAbortController.current.abort();
+    }
+    searchAbortController.current = new AbortController();
+    const signal = searchAbortController.current.signal;
+
     setIsLoading(true);
     try {
       const { data, instance } = await fetchFromInvidious(
         `/api/v1/search?q=${encodeURIComponent(query)}`,
-        (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId || v.authorId)
+        (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId || v.authorId),
+        signal
       );
       
+      if (signal.aborted) return;
+
       const filteredData = data.filter(item => isOfficialChannelOrNotSpam(item));
       const mapped = filteredData
         .map(item => {
@@ -1507,12 +1587,13 @@ export const YoutubeProvider = ({ children }) => {
 
       setVideos(mapped);
     } catch (e) {
+      if (signal.aborted) return;
       console.warn("Search fetch failed", e);
       setVideos([]);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [fetchFromInvidious]);
 
   const fetchCommentsInBackground = async (videoId, primaryInstance, currentVideoObj) => {
     let fetchedComments = [];
@@ -2035,7 +2116,7 @@ export const YoutubeProvider = ({ children }) => {
     window.history.replaceState(state, "", window.location.pathname + window.location.search);
   }, []);
 
-  const fetchMoreChannelVideos = async () => {
+  const fetchMoreChannelVideos = useCallback(async () => {
     if (!activeChannel || isChannelLoading || !hasMoreChannelVideos) return;
     try {
       let mapped = [];
@@ -2087,10 +2168,10 @@ export const YoutubeProvider = ({ children }) => {
     } catch (e) {
       console.warn("Failed to fetch more channel videos", e);
     }
-  };
+  }, [activeChannel, isChannelLoading, hasMoreChannelVideos, channelContinuation, fetchFromInvidious, channelSearchPage]);
 
   // Fetch more comments using continuation token
-  const fetchMoreComments = async (videoId, continuation) => {
+  const fetchMoreComments = useCallback(async (videoId, continuation) => {
     if (!videoId || !continuation) return false;
     try {
       for (const cInst of FALLBACK_INSTANCES) {
@@ -2136,7 +2217,7 @@ export const YoutubeProvider = ({ children }) => {
       console.warn("fetchMoreComments failed:", e);
     }
     return false;
-  };
+  }, []);
 
   const formatShortLikes = (count) => {
     if (count === undefined || count === null || isNaN(count)) return "0";
@@ -2273,7 +2354,7 @@ export const YoutubeProvider = ({ children }) => {
     setHomeShorts(finalShorts);
   };
 
-  const fetchMoreRelatedVideos = async (video) => {
+  const fetchMoreRelatedVideos = useCallback(async (video) => {
     if (!video || isDetailsLoading) return;
     try {
       const nextPage = relatedSearchPage + 1;
@@ -2301,7 +2382,7 @@ export const YoutubeProvider = ({ children }) => {
     } catch (e) {
       console.warn("Failed to fetch more related videos:", e);
     }
-  };
+  }, [isDetailsLoading, relatedSearchPage, fetchFromInvidious]);
 
   useEffect(() => {
     fetchHomeShorts();
