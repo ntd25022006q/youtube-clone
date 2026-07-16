@@ -915,12 +915,12 @@ export const YoutubeProvider = ({ children }) => {
       "ucsjbtgtlrdami-tdgpuv9wq", "ucbjycsmduvyelgt1gsryfw", "ucx6oamysswnlfqy9ovgyww", "ucsj4gkvc6nrvii8umztf0ow"
     ];
 
-    // Append hl=vi or hl=en based on query path
+    // Append hl=vi&region=VN or hl=en&region=US based on query path
     let localizedPath = path;
     if (!localizedPath.includes("hl=")) {
       const pathLower = localizedPath.toLowerCase();
       const isEnglish = ENGLISH_CHANNELS.some(ch => pathLower.includes(encodeURIComponent(ch)) || pathLower.includes(ch));
-      const hl = isEnglish ? "hl=en" : "hl=vi";
+      const hl = isEnglish ? "hl=en&region=US" : "hl=vi&region=VN";
       localizedPath += localizedPath.includes("?") ? `&${hl}` : `?${hl}`;
     }
 
@@ -937,10 +937,13 @@ export const YoutubeProvider = ({ children }) => {
     const prioritizedInstances = [activeInstanceRef.current, ...instancesRef.current.filter(i => i !== activeInstanceRef.current)].slice(0, 3);
 
     const fetchFromSingle = async (instance, signal) => {
+      const isEnglish = ENGLISH_CHANNELS.some(ch => localizedPath.toLowerCase().includes(ch));
+      const headers = {
+        "Accept": "application/json",
+        "Accept-Language": isEnglish ? "en-US,en;q=0.9" : "vi-VN,vi;q=0.9,en;q=0.8"
+      };
       const response = await fetch(`${instance}${localizedPath}`, {
-        headers: {
-          "Accept": "application/json"
-        },
+        headers,
         signal
       });
       if (!response.ok) {

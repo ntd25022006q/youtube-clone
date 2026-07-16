@@ -3408,24 +3408,25 @@
 .global-watch-overlay.mini-mode {
   bottom: 24px;
   right: 24px;
-  width: 400px;
-  height: 95px;
+  width: 340px;
+  height: 250px;
   background-color: #0f0f0f;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
   border: 1px solid #272727;
   display: flex !important;
-  flex-direction: row-reverse !important;
+  flex-direction: column !important;
   overflow: hidden;
+  z-index: 2000 !important;
 }
 
 /* Adaptive styles for VideoDetail inside miniplayer */
 .global-watch-overlay.mini-mode .video-detail-page {
   display: flex !important;
-  flex-direction: row-reverse !important;
-  height: 100%;
-  width: 100%;
-  gap: 0;
+  flex-direction: column !important;
+  height: 100% !important;
+  width: 100% !important;
+  gap: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
   max-width: 100% !important;
@@ -3434,11 +3435,12 @@
 }
 
 .global-watch-overlay.mini-mode .video-detail-main {
-  width: 170px !important;
-  height: 100% !important;
+  width: 100% !important;
+  height: 191px !important; /* 16:9 aspect ratio for 340px width */
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
+  position: relative !important;
 }
 
 .global-watch-overlay.mini-mode .video-player-outer-container {
@@ -3454,6 +3456,7 @@
   height: 100% !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  position: relative !important;
 }
 
 .global-watch-overlay.mini-mode #youtube-player-container,
@@ -3476,40 +3479,46 @@
   display: none !important;
 }
 
-/* Show miniplayer info bar on the left */
+/* Show miniplayer info bar on the bottom */
 .global-watch-overlay.mini-mode .miniplayer-info-bar {
   display: flex !important;
-  width: 230px !important;
-  height: 100% !important;
-  background: #0f0f0f !important;
-  padding: 12px 16px !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  justify-content: center !important;
-  border-top: none !important;
-  border-right: none !important;
-  flex: 1 !important;
+  width: 100% !important;
+  height: 59px !important; /* Remaining height */
+  background: #181818 !important;
+  padding: 8px 16px !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-top: 1px solid #272727 !important;
   box-sizing: border-box !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+.global-watch-overlay.mini-mode .miniplayer-info-bar:hover {
+  background: #212121 !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-title {
-  font-size: 14px !important;
+  font-size: 13px !important;
   font-weight: 500 !important;
   color: #ffffff !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  width: 200px !important;
-  margin-bottom: 4px !important;
+  width: 250px !important;
+  margin-bottom: 2px !important;
+  text-align: left !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-channel {
-  font-size: 12px !important;
+  font-size: 11px !important;
   color: #aaaaaa !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
-  width: 200px !important;
+  width: 250px !important;
+  text-align: left !important;
 }
 
 /* Miniplayer overlay controls styled as absolute hover overlays over the video block */
@@ -3519,12 +3528,13 @@
   left: 0 !important;
   width: 100% !important;
   height: 100% !important;
-  background: rgba(0, 0, 0, 0.6) !important;
+  background: rgba(0, 0, 0, 0.65) !important;
   opacity: 0 !important;
   transition: opacity 0.2s ease !important;
   display: flex !important;
+  flex-direction: column !important;
   pointer-events: none !important;
-  z-index: 10 !important;
+  z-index: 100 !important;
 }
 
 .global-watch-overlay.mini-mode .video-player-wrapper:hover .miniplayer-overlay-controls {
@@ -3532,13 +3542,20 @@
   pointer-events: all !important;
 }
 
-.global-watch-overlay.mini-mode .miniplayer-btn-play {
+.global-watch-overlay.mini-mode .miniplayer-center-controls {
   position: absolute !important;
   top: 50% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  width: 36px !important;
-  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  z-index: 102 !important;
+}
+
+.global-watch-overlay.mini-mode .miniplayer-btn-play {
+  width: 42px !important;
+  height: 42px !important;
   background: rgba(0, 0, 0, 0.8) !important;
   border: none !important;
   border-radius: 50% !important;
@@ -3550,17 +3567,32 @@
   transition: background 0.2s, transform 0.1s !important;
 }
 
-.global-watch-overlay.mini-mode .miniplayer-btn-play:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-  transform: translate(-50%, -50%) scale(1.1) !important;
+.global-watch-overlay.mini-mode .miniplayer-btn-next {
+  width: 32px !important;
+  height: 32px !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: none !important;
+  border-radius: 50% !important;
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: background 0.2s, transform 0.1s !important;
+}
+
+.global-watch-overlay.mini-mode .miniplayer-btn-play:hover,
+.global-watch-overlay.mini-mode .miniplayer-btn-next:hover {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: scale(1.1) !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-btn-expand {
   position: absolute !important;
   top: 8px !important;
   left: 8px !important;
-  width: 26px !important;
-  height: 26px !important;
+  width: 28px !important;
+  height: 28px !important;
   background: rgba(0, 0, 0, 0.8) !important;
   border: none !important;
   border-radius: 50% !important;
@@ -3570,18 +3602,19 @@
   justify-content: center !important;
   cursor: pointer !important;
   transition: background 0.2s !important;
+  z-index: 102 !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-btn-expand:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-btn-close {
   position: absolute !important;
   top: 8px !important;
   right: 8px !important;
-  width: 26px !important;
-  height: 26px !important;
+  width: 28px !important;
+  height: 28px !important;
   background: rgba(0, 0, 0, 0.8) !important;
   border: none !important;
   border-radius: 50% !important;
@@ -3591,33 +3624,49 @@
   justify-content: center !important;
   cursor: pointer !important;
   transition: background 0.2s !important;
+  z-index: 102 !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-btn-close:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-time-duration {
   position: absolute !important;
-  bottom: 8px !important;
-  left: 8px !important;
+  bottom: 10px !important;
+  left: 10px !important;
   font-size: 11px !important;
   color: #ffffff !important;
-  background: rgba(0, 0, 0, 0.6) !important;
-  padding: 2px 6px !important;
-  border-radius: 2px !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  padding: 3px 6px !important;
+  border-radius: 4px !important;
   font-family: Roboto, Arial, sans-serif !important;
   pointer-events: none !important;
+  z-index: 102 !important;
 }
 
 .global-watch-overlay.mini-mode .miniplayer-progress-bar-fill {
   position: absolute !important;
   bottom: 0 !important;
   left: 0 !important;
-  height: 3px !important;
+  height: 4px !important;
   background: #ff0000 !important;
   transition: width 0.1s linear !important;
+  z-index: 105 !important;
 }
+
+.global-watch-overlay.mini-mode .miniplayer-progress-bar-fill::after {
+  content: "" !important;
+  position: absolute !important;
+  right: -5px !important;
+  top: -4px !important;
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  background: #ff0000 !important;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.6) !important;
+}
+
 
 /* ==========================================================================
    AUTOPLAY COUNTDOWN OVERLAY

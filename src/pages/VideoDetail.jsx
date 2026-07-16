@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, Sparkles, Bookmark, ListFilter, Settings, Volume2, MessageSquare, Gauge, Settings2, Moon, Mic, ChevronDown, ChevronUp, Maximize2, Play, Pause, X } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, Sparkles, Bookmark, ListFilter, Settings, Volume2, MessageSquare, Gauge, Settings2, Moon, Mic, ChevronDown, ChevronUp, Maximize2, Play, Pause, X, SkipForward } from "lucide-react";
 import { YoutubeContext, getFallbackAvatar } from "../context/YoutubeContext";
 import { ShareModal } from "../components/Modals";
 import "./pages.css";
@@ -1000,15 +1000,22 @@ const VideoDetail = () => {
             {/* Miniplayer Hover Overlay */}
             {isMiniplayerActive && (
               <div className="miniplayer-overlay-controls" onClick={e => e.stopPropagation()}>
-                <button className="miniplayer-btn-play" onClick={(e) => { e.stopPropagation(); togglePlay(e); }} title={isPlaying ? "Tạm dừng" : "Phát"}>
-                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                </button>
                 <button className="miniplayer-btn-expand" onClick={(e) => { e.stopPropagation(); handleExpand(e); }} title="Mở rộng">
-                  <Maximize2 size={13} />
+                  <Maximize2 size={14} />
                 </button>
                 <button className="miniplayer-btn-close" onClick={(e) => { e.stopPropagation(); handleClose(e); }} title="Đóng">
-                  <X size={13} />
+                  <X size={14} />
                 </button>
+
+                <div className="miniplayer-center-controls">
+                  <button className="miniplayer-btn-play" onClick={(e) => { e.stopPropagation(); togglePlay(e); }} title={isPlaying ? "Tạm dừng" : "Phát"}>
+                    {isPlaying ? <Pause size={20} fill="#ffffff" /> : <Play size={20} fill="#ffffff" />}
+                  </button>
+                  <button className="miniplayer-btn-next" onClick={(e) => { e.stopPropagation(); playNextVideo(); }} title="Video tiếp theo">
+                    <SkipForward size={14} fill="#ffffff" />
+                  </button>
+                </div>
+
                 <div className="miniplayer-time-duration">
                   {formatTime(currentTime)} / {formatTime(duration || 0)}
                 </div>
@@ -1021,13 +1028,16 @@ const VideoDetail = () => {
 
         {/* Miniplayer Info Bar */}
         <div className="miniplayer-info-bar" onClick={handleExpand}>
-          <div style={{ width: "100%", minWidth: 0 }}>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: "10px" }}>
             <div className="miniplayer-title" title={currentVideoState.title}>
               {currentVideoState.title}
             </div>
             <div className="miniplayer-channel">
               {currentVideoState.channel?.name}
             </div>
+          </div>
+          <div className="miniplayer-chevron-btn" style={{ color: "#ffffff", display: "flex", alignItems: "center" }}>
+            <ChevronUp size={18} />
           </div>
         </div>
 
