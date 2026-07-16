@@ -134,7 +134,8 @@ export const findFastestInstance = async (candidateList) => {
   const timeoutId = setTimeout(() => controller.abort(), 1500);
   
   try {
-    const promises = candidateList.slice(0, 6).map(async (inst) => {
+    const uniqueCandidates = Array.from(new Set(candidateList));
+    const promises = uniqueCandidates.slice(0, 6).map(async (inst) => {
       const t0 = Date.now();
       const res = await fetch(`${inst}/api/v1/trending`, {
         signal: controller.signal
@@ -150,8 +151,12 @@ export const findFastestInstance = async (candidateList) => {
     console.log("Fastest instance raced:", fastest.inst, "in", fastest.time, "ms");
     return fastest.inst;
   } catch (err) {
-    console.warn("Fastest instance race failed, using default candidate:", candidateList[0]);
-    return candidateList[0];
+    const isLocal = window.location.hostname === "localhost" || 
+                    window.location.hostname === "127.0.0.1" || 
+                    window.location.port === "5173";
+    const defaultCandidate = isLocal ? "" : (candidateList[0] || "https://yt.chocolatemoo53.com");
+    console.warn("Fastest instance race failed, using default candidate:", defaultCandidate);
+    return defaultCandidate;
   } finally {
     clearTimeout(timeoutId);
   }
@@ -857,6 +862,10 @@ export const YoutubeProvider = ({ children }) => {
   // Fetch healthy instances from api.invidious.io on startup
   useEffect(() => {
     const loadInstances = async () => {
+      const isLocal = window.location.hostname === "localhost" || 
+                      window.location.hostname === "127.0.0.1" || 
+                      window.location.port === "5173";
+      
       try {
         const response = await fetch("https://api.invidious.io/instances.json");
         if (response.ok) {
@@ -869,21 +878,29 @@ export const YoutubeProvider = ({ children }) => {
             .map((item) => item[1].uri || `https://${item[0]}`);
           
           if (domains.length > 0) {
-            const merged = Array.from(new Set([...domains, ...FALLBACK_INSTANCES]));
+            // Prioritize local proxy "" first in development to bypass CORS rejections
+            const candidates = isLocal 
+              ? ["", ...domains] 
+              : domains.filter(Boolean);
+            
+            const merged = Array.from(new Set([...candidates, ...FALLBACK_INSTANCES]));
             setInstances(merged);
             const fastest = await findFastestInstance(merged);
             setActiveInstance(fastest);
           } else {
-            const fastest = await findFastestInstance(FALLBACK_INSTANCES);
+            const candidates = FALLBACK_INSTANCES.filter(inst => inst !== "" || isLocal);
+            const fastest = await findFastestInstance(candidates);
             setActiveInstance(fastest);
           }
         } else {
-          const fastest = await findFastestInstance(FALLBACK_INSTANCES);
+          const candidates = FALLBACK_INSTANCES.filter(inst => inst !== "" || isLocal);
+          const fastest = await findFastestInstance(candidates);
           setActiveInstance(fastest);
         }
       } catch (e) {
         console.warn("Failed to load instances list, using fallbacks:", e);
-        const fastest = await findFastestInstance(FALLBACK_INSTANCES);
+        const candidates = FALLBACK_INSTANCES.filter(inst => inst !== "" || isLocal);
+        const fastest = await findFastestInstance(candidates);
         setActiveInstance(fastest);
       }
     };
