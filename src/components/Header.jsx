@@ -48,12 +48,14 @@ const Header = () => {
 
     const delayDebounce = setTimeout(async () => {
       try {
+        // Use activeInstance as base URL so suggestions work in production too
+        const base = activeInstance || "";
         const response = await fetch(
-          `/api/v1/search/suggestions?q=${encodeURIComponent(inputVal)}`
+          `${base}/api/v1/search/suggestions?q=${encodeURIComponent(inputVal)}`
         );
         if (response.ok) {
           const resData = await response.json();
-          if (resData && resData.suggestions) {
+          if (resData && resData.suggestions && resData.suggestions.length > 0) {
             setSuggestions(resData.suggestions.slice(0, 8));
             return;
           }
@@ -62,15 +64,27 @@ const Header = () => {
         console.warn("Live suggestions failed, fallback to local indexing:", err);
       }
 
-      // Offline fallback
+      // Offline fallback: filter from loaded videos
+      const q = inputVal.toLowerCase();
       const filtered = videos
-        .filter((video) =>
-          video.title.toLowerCase().includes(inputVal.toLowerCase())
-        )
+        .filter((video) => video.title.toLowerCase().includes(q))
         .map((video) => video.title)
         .slice(0, 5);
 
-      setSuggestions(filtered);
+      // Add some static popular Vietnamese suggestions based on common patterns
+      const staticSuggestions = [];
+      if (filtered.length < 5) {
+        const patterns = [
+          `${inputVal} mới nhất`,
+          `${inputVal} hay nhất`,
+          `${inputVal} 2026`,
+          `${inputVal} full`,
+          `${inputVal} tập 1`,
+        ];
+        staticSuggestions.push(...patterns.slice(0, 5 - filtered.length));
+      }
+
+      setSuggestions([...filtered, ...staticSuggestions].slice(0, 8));
     }, 300);
 
     return () => clearTimeout(delayDebounce);
@@ -208,6 +222,33 @@ const Header = () => {
       </div>
 
       <div className="header-right">
+        {/* Voice search mic button */}
+        <button
+          className="icon-btn action-btn"
+          aria-label="Tìm kiếm bằng giọng nói"
+          onClick={() => setShowCreateModal(true)}
+          title="Tìm kiếm bằng giọng nói"
+          style={{ display: "flex" }}
+        >
+          <Mic size={20} />
+        </button>
+
+        {/* Create / Upload video button */}
+        <button
+          className="icon-btn action-btn"
+          aria-label="Tạo video hoặc bài đăng"
+          onClick={() => {
+            if (!currentUser) {
+              setShowLoginModal(true);
+            } else {
+              setShowCreateModal(true);
+            }
+          }}
+          title="Tạo video hoặc bài đăng"
+          style={{ display: "flex" }}
+        >
+          <Video size={20} />
+        </button>
 
         {/* Notifications Popover */}
         <div className="notifications-wrapper" ref={notificationsRef}>

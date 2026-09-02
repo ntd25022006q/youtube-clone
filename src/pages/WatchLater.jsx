@@ -30,9 +30,10 @@ const WatchLater = () => {
           <div className="playlist-sidebar-card watch-later-playlist-card">
             <div className="playlist-cover">
               <img
-                src={watchLaterList[0].thumbnailUrl}
+                src={watchLaterList[0].thumbnailUrl || `https://i.ytimg.com/vi/${watchLaterList[0].id}/hqdefault.jpg`}
                 alt="Playlist cover"
                 className="playlist-cover-img"
+                onError={e => { e.target.src = `https://i.ytimg.com/vi/${watchLaterList[0].id}/hqdefault.jpg`; }}
               />
               <div className="cover-overlay" onClick={handlePlayFirst}>
                 <Play size={36} fill="white" />

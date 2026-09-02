@@ -8,30 +8,67 @@ import "./components.css";
    ========================================================================== */
 export const ShareModal = ({ video, onClose }) => {
   const [copied, setCopied] = useState(false);
-  const videoUrl = `${window.location.origin}/watch?v=${video.id}`;
+  const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(videoUrl);
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(videoUrl).catch(() => {});
+    } else {
+      // Fallback for older browsers
+      const ta = document.createElement("textarea");
+      ta.value = videoUrl;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand("copy");
+      document.body.removeChild(ta);
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const shareOptions = [
+    { label: "Facebook", icon: "📘", href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(videoUrl)}` },
+    { label: "Twitter", icon: "🐦", href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(videoUrl)}&text=${encodeURIComponent(video.title || "")}` },
+    { label: "WhatsApp", icon: "💬", href: `https://wa.me/?text=${encodeURIComponent(videoUrl)}` },
+    { label: "Zalo", icon: "🟦", href: `https://zalo.me/?url=${encodeURIComponent(videoUrl)}` },
+  ];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content share-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Share</h3>
-          <button className="close-btn" onClick={onClose} aria-label="Close modal">
+          <h3>Chia sẻ</h3>
+          <button className="close-btn" onClick={onClose} aria-label="Đóng">
             <X size={20} />
           </button>
         </div>
         <div className="share-body">
-          <p className="share-description">Copy this video link to share with friends:</p>
+          {/* Social share buttons */}
+          <div style={{ display: "flex", gap: "16px", marginBottom: "20px", flexWrap: "wrap" }}>
+            {shareOptions.map(opt => (
+              <a
+                key={opt.label}
+                href={opt.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: "6px",
+                  color: "#fff", textDecoration: "none", fontSize: "12px",
+                  background: "#3f3f3f", borderRadius: "12px", padding: "12px 16px",
+                  minWidth: "64px", cursor: "pointer"
+                }}
+              >
+                <span style={{ fontSize: "24px" }}>{opt.icon}</span>
+                <span>{opt.label}</span>
+              </a>
+            ))}
+          </div>
+          <p className="share-description" style={{ color: "#aaa", marginBottom: "8px", fontSize: "13px" }}>Sao chép liên kết</p>
           <div className="share-link-container">
             <input type="text" readOnly value={videoUrl} className="share-input-field" />
             <button className={`copy-btn ${copied ? "copied" : ""}`} onClick={handleCopy}>
               {copied ? <Check size={18} /> : <Copy size={18} />}
-              <span>{copied ? "Copied!" : "Copy"}</span>
+              <span>{copied ? "Đã sao chép!" : "Sao chép"}</span>
             </button>
           </div>
         </div>
@@ -39,6 +76,7 @@ export const ShareModal = ({ video, onClose }) => {
     </div>
   );
 };
+
 
 /* ==========================================================================
    VOICE SEARCH MODAL

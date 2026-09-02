@@ -1032,6 +1032,7 @@
   padding: 8px;
   border-radius: 12px;
   transition: background-color 0.2s;
+  align-items: flex-start;
 }
 
 .history-row-card:hover {

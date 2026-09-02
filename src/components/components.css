@@ -881,3 +881,66 @@
   to { transform: translateX(0); }
 }
 
+/* Video Hover Preview iframe */
+.video-hover-preview {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 12px;
+  pointer-events: none;
+  z-index: 2;
+  background: #000;
+}
+
+/* Action button improvements */
+.action-btn {
+  transition: background-color 0.2s, transform 0.1s;
+}
+
+.action-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+/* Improve notifications popover z-index */
+.notifications-popover {
+  z-index: 3000;
+}
+
+/* Suggestion dropdown improvements */
+.suggestions-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #212121;
+  border: 1px solid #3f3f3f;
+  border-radius: 12px;
+  overflow: hidden;
+  z-index: 2500;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  list-style: none;
+  padding: 4px 0;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  font-size: 14px;
+}
+
+.suggestion-item:hover {
+  background-color: rgba(255,255,255,0.08);
+}
+
+.suggestion-icon {
+  color: #aaa;
+  flex-shrink: 0;
+}

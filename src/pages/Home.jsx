@@ -95,6 +95,25 @@ const Home = () => {
 
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  const getTopSliceCount = () => {
+    if (typeof window === "undefined") return 8;
+    const w = window.innerWidth;
+    if (w >= 1900) return 10;
+    if (w >= 1400) return 8;
+    if (w >= 1200) return 6;
+    return 6;
+  };
+
+  const [topSliceCount, setTopSliceCount] = useState(getTopSliceCount);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setTopSliceCount(getTopSliceCount());
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   // Reset page when category changes and fetch fresh data
   useEffect(() => {
     setPage(1);
@@ -172,22 +191,34 @@ const Home = () => {
         </div>
       ) : (
         <>
-          <div className="video-grid">
-            {videos.map((video, index) => (
-              <React.Fragment key={video.id}>
-                <VideoCard video={video} />
-                {selectedCategory === "Tất cả" && index === 5 && homeShorts && homeShorts.length > 0 && (
-                  <div className="shorts-shelf-grid-wrapper" style={{ gridColumn: "1 / -1", width: "100%" }}>
-                    <ShortsShelf shorts={homeShorts} onShortClick={handleShortClick} />
-                  </div>
-                )}
-              </React.Fragment>
-            ))}
+          <div className="home-videos-container" style={{ display: "flex", flexDirection: "column", gap: "24px", width: "100%" }}>
+            {/* Top videos grid */}
+            <div className="video-grid">
+              {videos.slice(0, selectedCategory === "Tất cả" && homeShorts && homeShorts.length > 0 ? topSliceCount : videos.length).map((video) => (
+                <VideoCard key={video.id} video={video} />
+              ))}
+            </div>
+
+            {/* Shorts shelf in between full rows without breaking grid columns */}
+            {selectedCategory === "Tất cả" && homeShorts && homeShorts.length > 0 && (
+              <ShortsShelf shorts={homeShorts} onShortClick={handleShortClick} />
+            )}
+
+            {/* Remaining videos below shorts */}
+            {selectedCategory === "Tất cả" && homeShorts && homeShorts.length > 0 && videos.length > topSliceCount && (
+              <div className="video-grid">
+                {videos.slice(topSliceCount).map((video) => (
+                  <VideoCard key={video.id} video={video} />
+                ))}
+              </div>
+            )}
             
             {showLoadMoreSkeletons && (
-              Array.from({ length: 6 }).map((_, idx) => (
-                <VideoSkeleton key={`load-sk-${idx}`} />
-              ))
+              <div className="video-grid">
+                {Array.from({ length: 6 }).map((_, idx) => (
+                  <VideoSkeleton key={`load-sk-${idx}`} />
+                ))}
+              </div>
             )}
           </div>
           <div ref={sentinelRef} style={{ height: "20px", margin: "20px 0" }} />

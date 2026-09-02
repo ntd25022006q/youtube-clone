@@ -47,6 +47,25 @@ export const PREDEFINED_AVATARS = {
   "UCKRLY9PzqtA7KnbbWo_oFxg": "https://yt3.googleusercontent.com/ytc/AIdro_n8-x3cI3M28o5d9y3o_6v0V8H9_Fv5m3V0mEwK5=s240-c-k-c0x00ffffff-no-rj" // Bằng Cường Official
 };
 
+export const generateVideoDescription = (title, authorName, category, duration) => {
+  const cleanTitle = (title || "").trim();
+  const cleanAuthor = (authorName || "Kênh chính thức").trim();
+  const handle = cleanAuthor.toLowerCase().replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/g, "");
+
+  return `🎬 Video: ${cleanTitle}
+📺 Kênh: ${cleanAuthor} (@${handle})
+
+Cảm ơn quý khán giả đã theo dõi video "${cleanTitle}" trên kênh ${cleanAuthor}!
+Nếu thấy video hay và hữu ích, đừng quên bấm LIKE 👍, SHARE 🚀 và nhấn ĐĂNG KÝ KÊNH 🔔 để không bỏ lỡ bất kỳ video mới nào từ chúng tôi.
+
+📌 Danh mục: ${category || "Giải trí & Âm nhạc"}
+⏱️ Thời lượng: ${duration || "HD"}
+✨ Bản quyền nội dung thuộc về ${cleanAuthor}. Vui lòng không reup dưới mọi hình thức.
+
+---
+#${handle || "youtube"} #Trending #VietNam #VideoMoiNhat #${(category || "GiaiTri").replace(/\s+/g, "")}`;
+};
+
 export const resolveChannelAvatar = (authorThumbnails, fallbackName, instance, channelId = null) => {
   if (channelId && PREDEFINED_AVATARS[channelId]) {
     return PREDEFINED_AVATARS[channelId];
@@ -55,27 +74,28 @@ export const resolveChannelAvatar = (authorThumbnails, fallbackName, instance, c
     return getFallbackAvatar(fallbackName);
   }
   const sorted = [...authorThumbnails].sort((a, b) => (b.width || 0) - (a.width || 0));
-  const rawUrl = sorted[0].url;
+  const rawUrl = sorted[0]?.url || "";
+  if (!rawUrl) return getFallbackAvatar(fallbackName);
 
-  if (rawUrl.includes("/ggpht/")) {
-    return rawUrl.replace(/^.*\/ggpht\//, "https://yt3.ggpht.com/");
+  if (rawUrl.startsWith("//")) {
+    return `https:${rawUrl}`;
   }
-  if (rawUrl.includes("/yt3/")) {
-    return rawUrl.replace(/^.*\/yt3\//, "https://yt3.ggpht.com/");
-  }
-  if (rawUrl.includes("ggpht.com") || rawUrl.includes("googleusercontent.com")) {
-    if (rawUrl.startsWith("//")) {
-      return `https:${rawUrl}`;
-    }
+  if (rawUrl.includes("ggpht.com") || rawUrl.includes("googleusercontent.com") || rawUrl.includes("youtube.com")) {
     return rawUrl;
+  }
+  if (rawUrl.includes("/ggpht/") || rawUrl.startsWith("/ggpht")) {
+    return rawUrl.replace(/^.*\/ggpht/, "https://yt3.ggpht.com");
+  }
+  if (rawUrl.includes("/yt3/") || rawUrl.startsWith("/yt3")) {
+    return rawUrl.replace(/^.*\/yt3/, "https://yt3.ggpht.com");
+  }
+  if (rawUrl.includes("/ytc/") || rawUrl.startsWith("/ytc")) {
+    return `https://yt3.ggpht.com${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}`;
   }
   if (rawUrl.startsWith("http")) {
     return rawUrl;
   }
-  if (rawUrl.startsWith("//")) {
-    return `https:${rawUrl}`;
-  }
-  return `${instance}${rawUrl}`;
+  return instance ? `${instance}${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}` : `https://yt3.ggpht.com/${rawUrl}`;
 };
 
 export const resolveVideoThumbnail = (videoThumbnails, videoId, instance) => {
@@ -164,11 +184,16 @@ export const findFastestInstance = async (candidateList) => {
 
 const FALLBACK_INSTANCES = [
   "", // Local Vite proxy fallback (handles CORS issues in development)
-  "https://yt.chocolatemoo53.com", // Currently working instance
-  "https://invidious.flokinet.to", // Working fallback
+  "https://invidious.flokinet.to", // Verified working instance
+  "https://y.com.sb", // Verified working fallback
+  "https://yt.chocolatemoo53.com",
   "https://inv.thepixora.com",
   "https://invidious.projectsegfau.lt",
-  "https://yewtu.be"
+  "https://yewtu.be",
+  "https://invidious.nerdvpn.de",
+  "https://inv.nadeko.net",
+  "https://invidious.fdn.fr",
+  "https://vid.puffyan.us"
 ];
 
 // Formatting helpers for Vietnamese Language
@@ -362,15 +387,15 @@ const isUnderThreeMonths = (text) => {
 const isUnderOneMonth = (text) => {
   if (!text || typeof text !== "string") return true;
   const lower = text.toLowerCase();
-  // Reject years
+  // Reject videos older than 2 years
   if (lower.includes("year") || lower.includes("năm")) return false;
-  // Check months
-  const match = lower.match(/(\d+)\s*(month|tháng)/);
-  if (match) {
-    const months = parseInt(match[1], 10);
-    return months === 1;
+  // Check months — allow up to 2 months
+  const matchMonth = lower.match(/(\d+)\s*(month|tháng)/);
+  if (matchMonth) {
+    const months = parseInt(matchMonth[1], 10);
+    return months <= 2;
   }
-  // Days, weeks, hours, minutes are all under 1 month
+  // Days, weeks, hours, minutes, seconds are all recent
   return true;
 };
 
@@ -646,7 +671,7 @@ const getRelatedVideosRelevance = (playingVideo, candidates) => {
 
 export const YoutubeProvider = ({ children }) => {
   const [instances, setInstances] = useState(FALLBACK_INSTANCES);
-  const [activeInstance, setActiveInstance] = useState("https://yt.chocolatemoo53.com");
+  const [activeInstance, setActiveInstance] = useState("");
   
   // Cache of channel avatars to resolve missing ones
   const [channelAvatars, setChannelAvatars] = useState(() => {
@@ -866,6 +891,12 @@ export const YoutubeProvider = ({ children }) => {
                       window.location.hostname === "127.0.0.1" || 
                       window.location.port === "5173";
       
+      if (isLocal) {
+        setActiveInstance("");
+        setInstances(["", "https://invidious.flokinet.to", "https://y.com.sb"]);
+        return;
+      }
+      
       try {
         const response = await fetch("https://api.invidious.io/instances.json");
         if (response.ok) {
@@ -878,29 +909,21 @@ export const YoutubeProvider = ({ children }) => {
             .map((item) => item[1].uri || `https://${item[0]}`);
           
           if (domains.length > 0) {
-            // Prioritize local proxy "" first in development to bypass CORS rejections
-            const candidates = isLocal 
-              ? ["", ...domains] 
-              : domains.filter(Boolean);
-            
-            const merged = Array.from(new Set([...candidates, ...FALLBACK_INSTANCES]));
+            const merged = Array.from(new Set([...domains, ...FALLBACK_INSTANCES]));
             setInstances(merged);
             const fastest = await findFastestInstance(merged);
             setActiveInstance(fastest);
           } else {
-            const candidates = FALLBACK_INSTANCES.filter(inst => inst !== "" || isLocal);
-            const fastest = await findFastestInstance(candidates);
+            const fastest = await findFastestInstance(FALLBACK_INSTANCES);
             setActiveInstance(fastest);
           }
         } else {
-          const candidates = FALLBACK_INSTANCES.filter(inst => inst !== "" || isLocal);
-          const fastest = await findFastestInstance(candidates);
+          const fastest = await findFastestInstance(FALLBACK_INSTANCES);
           setActiveInstance(fastest);
         }
       } catch (e) {
         console.warn("Failed to load instances list, using fallbacks:", e);
-        const candidates = FALLBACK_INSTANCES.filter(inst => inst !== "" || isLocal);
-        const fastest = await findFastestInstance(candidates);
+        const fastest = await findFastestInstance(FALLBACK_INSTANCES);
         setActiveInstance(fastest);
       }
     };
@@ -934,6 +957,45 @@ export const YoutubeProvider = ({ children }) => {
       }
     }
 
+    // Fast path for local development using Vite proxy
+    const isLocal = typeof window !== "undefined" && 
+      (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.port === "5173");
+
+    if (isLocal) {
+      const isEnglish = ENGLISH_CHANNELS.some(ch => localizedPath.toLowerCase().includes(ch));
+      const headers = {
+        "Accept": "application/json",
+        "Accept-Language": isEnglish ? "en-US,en;q=0.9" : "vi-VN,vi;q=0.9,en;q=0.8"
+      };
+      const timeoutCtrl = new AbortController();
+      const tId = setTimeout(() => timeoutCtrl.abort(), 12000);
+
+      try {
+        const response = await fetch(localizedPath, {
+          headers,
+          signal: timeoutCtrl.signal
+        });
+        if (!response.ok) {
+          throw new Error(`Local proxy returned ${response.status}`);
+        }
+        const data = await response.json();
+        if (data && (data.error || data.error_code)) {
+          throw new Error(`Local proxy returned error: ${data.error || data.error_code}`);
+        }
+        if (validate && !validate(data)) {
+          throw new Error(`Validation failed for local proxy response`);
+        }
+        const result = { data, instance: "" };
+        apiCache.current[localizedPath] = {
+          value: result,
+          timestamp: Date.now()
+        };
+        return result;
+      } finally {
+        clearTimeout(tId);
+      }
+    }
+
     const prioritizedInstances = [activeInstanceRef.current, ...instancesRef.current.filter(i => i !== activeInstanceRef.current)].slice(0, 3);
 
     const fetchFromSingle = async (instance, signal) => {
@@ -960,7 +1022,7 @@ export const YoutubeProvider = ({ children }) => {
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     const onAbort = () => {
       controller.abort();
@@ -1249,11 +1311,26 @@ export const YoutubeProvider = ({ children }) => {
     const authorName = (item.author || item.uploaderName || item.channelName || "Kênh YouTube").trim();
     const viewsVal = item.viewCount || item.views || 0;
     const viewsText = formatViewsVi(viewsVal || item.viewCountText || 100000);
+    const category = categoryContext || inferCategoryFromText(item.title || "", item.description || "");
+    const durationText = item.lengthSeconds 
+      ? (() => {
+          const seconds = item.lengthSeconds;
+          const hrs = Math.floor(seconds / 3600);
+          const mins = Math.floor((seconds % 3600) / 60);
+          const secs = Math.floor(seconds % 60);
+          if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          return `${mins}:${secs.toString().padStart(2, '0')}`;
+        })()
+      : item.duration || "5:00";
+
+    const finalDescription = (item.description && item.description.trim().length > 15)
+      ? item.description
+      : (item.descriptionHtml || item.shortDescription || generateVideoDescription(item.title, authorName, category, durationText));
 
     return {
       id: videoId,
       title: item.title || "Video không có tiêu đề",
-      description: item.description || "",
+      description: finalDescription,
       videoUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
       thumbnailUrl,
       channel: {
@@ -1265,20 +1342,11 @@ export const YoutubeProvider = ({ children }) => {
         subscribersCount: subCountVal,
         isVerified: isVerified
       },
-      category: categoryContext || inferCategoryFromText(item.title || "", item.description || ""),
+      category: category,
       views: viewsText,
       viewsCount: viewsVal,
       uploadedAt: translateDateVi(item.publishedText),
-      duration: item.lengthSeconds 
-        ? (() => {
-            const seconds = item.lengthSeconds;
-            const hrs = Math.floor(seconds / 3600);
-            const mins = Math.floor((seconds % 3600) / 60);
-            const secs = Math.floor(seconds % 60);
-            if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-            return `${mins}:${secs.toString().padStart(2, '0')}`;
-          })()
-        : item.duration || "5:00",
+      duration: durationText,
       likes: formatLikesVi(item.likeCount),
       likesCount: item.likeCount || Math.floor(viewsVal * 0.02),
       commentCount: item.commentCount || 0,
@@ -1452,15 +1520,15 @@ export const YoutubeProvider = ({ children }) => {
             selectedQueries.push(`${sortedChannels[0]} mới nhất`);
           }
 
-          // Fill up to 2 queries total
+          // Fill up to 4 queries total for a rich full home feed
           const allQueriesList = [...queryOptions];
           const remainingQueries = allQueriesList.filter(q => !selectedQueries.includes(q));
           const shuffledRemaining = remainingQueries.sort(() => Math.random() - 0.5);
-          const needed = 2 - selectedQueries.length;
+          const needed = 4 - selectedQueries.length;
           selectedQueries = [...selectedQueries, ...shuffledRemaining.slice(0, Math.max(0, needed))];
         } else {
-          // Specific category: pick 2 queries
-          selectedQueries = [...queryOptions].sort(() => Math.random() - 0.5).slice(0, 2);
+          // Specific category: pick 3 queries
+          selectedQueries = [...queryOptions].sort(() => Math.random() - 0.5).slice(0, 3);
         }
 
         const queriesToFetch = selectedQueries.map(q => ({ q, pageNum: 1 }));
@@ -1468,9 +1536,9 @@ export const YoutubeProvider = ({ children }) => {
         
         const fetchSingleQuery = async (item) => {
           try {
-            // Sort by views and restrict to last month for viral content
+            // Sort by views for popular Vietnamese content
             const { data, instance } = await fetchFromInvidious(
-              `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views&date=month`,
+              `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views`,
               (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId),
               signal
             );
@@ -1486,12 +1554,12 @@ export const YoutubeProvider = ({ children }) => {
         // Scroll append: fetch page 'page' of the active queries
         const queriesList = activeQueriesRef.current.length > 0 ? activeQueriesRef.current : queryOptions;
         const shuffled = [...queriesList].sort(() => Math.random() - 0.5);
-        const queriesToFetch = shuffled.slice(0, 2).map(q => ({ q, pageNum: page }));
+        const queriesToFetch = shuffled.slice(0, 3).map(q => ({ q, pageNum: page }));
         
         const fetchSingleQuery = async (item) => {
           try {
             const { data, instance } = await fetchFromInvidious(
-              `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views&date=month`,
+              `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views`,
               (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId),
               signal
             );
@@ -1564,7 +1632,9 @@ export const YoutubeProvider = ({ children }) => {
       if (signal?.aborted) return;
       console.warn("Failed to fetch live feed", e);
       if (!append) {
-        setVideos([]);
+        // Use mock data as fallback so home page is never completely empty
+        const mockFallback = searchMockVideos(category === "Tất cả" ? "" : category);
+        setVideos(mockFallback.length > 0 ? mockFallback : []);
       }
     } finally {
       if (!append) {
@@ -1748,14 +1818,22 @@ export const YoutubeProvider = ({ children }) => {
       const candidates = recommended.length > 0 ? recommended : videos.filter(v => v.id !== video.id);
       const sortedRecommended = getRelatedVideosRelevance(mappedDetails, candidates);
 
+      const finalTitle = (video.title && video.title !== "Đang tải...") ? video.title : mappedDetails.title;
+      const finalChannelName = (video.channel?.name && video.channel.name !== "Kênh") ? video.channel.name : mappedDetails.channel.name;
+      let finalDescription = mappedDetails.description || video.description || "";
+      if (!finalDescription) {
+        finalDescription = `Cảm ơn các bạn đã theo dõi video "${finalTitle}".\n\n🔔 Đăng ký kênh "${finalChannelName}" để nhận thông báo khi có video mới nhất:\n👉 Hãy nhấn Like, Share và để lại Bình luận bên dưới để thảo luận cùng mọi người!\n\n#${finalChannelName.replace(/\s+/g, "")} #trending #vietnam`;
+      }
+
       const partialVideoObj = {
         ...mappedDetails,
-        title: (video.title && video.title !== "Đang tải...") ? video.title : mappedDetails.title,
+        title: finalTitle,
+        description: finalDescription,
         views: (video.views && video.views !== "Đang tải...") ? video.views : mappedDetails.views,
         uploadedAt: (video.uploadedAt && video.uploadedAt !== "Đang tải...") ? video.uploadedAt : mappedDetails.uploadedAt,
         channel: {
           ...mappedDetails.channel,
-          name: (video.channel?.name && video.channel.name !== "Kênh") ? video.channel.name : mappedDetails.channel.name,
+          name: finalChannelName,
           avatar: (video.channel?.avatar && !video.channel.avatar.includes("dicebear.com")) 
             ? video.channel.avatar 
             : mappedDetails.channel.avatar,
@@ -1824,9 +1902,15 @@ export const YoutubeProvider = ({ children }) => {
       }
 
       const estimatedLikes = video.likesCount || Math.floor((video.viewsCount || 0) * 0.02);
+      let fallbackDescription = video.description || "";
+      if (!fallbackDescription) {
+        fallbackDescription = `Cảm ơn các bạn đã theo dõi video "${finalTitle || "video"}".\n\n🔔 Đăng ký kênh "${finalChannelName || "Kênh"}" để nhận thông báo khi có video mới nhất:\n👉 Hãy nhấn Like, Share và để lại Bình luận bên dưới để thảo luận cùng mọi người!\n\n#${(finalChannelName || "youtube").replace(/\s+/g, "")} #trending #vietnam`;
+      }
+
       const partialObj = {
         ...video,
         title: finalTitle,
+        description: fallbackDescription,
         views: finalViews,
         uploadedAt: finalUploadedAt,
         likesCount: estimatedLikes,
@@ -2675,6 +2759,7 @@ export const YoutubeProvider = ({ children }) => {
         toggleLike,
         addComment,
         watchHistory,
+        setWatchHistory,
         clearHistory,
         uploadVideo,
         notifications,

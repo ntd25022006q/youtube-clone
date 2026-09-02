@@ -293,7 +293,7 @@ const VideoDetail = () => {
     }
   };
 
-  // Init / destroy YT Player when server changes (runs once, reuses player)
+  // Init / destroy YT Player when server or video ID changes
   useEffect(() => {
     if (playerServer !== "youtube" || !activeVideoIdRef.current) {
       setPlayer(null); setIsPlaying(false);
@@ -310,7 +310,7 @@ const VideoDetail = () => {
         ytPlayer = new window.YT.Player("youtube-player-container", {
           videoId: activeVideoIdRef.current,
           playerVars: { 
-            autoplay: 0, 
+            autoplay: 1, 
             controls: 0, 
             modestbranding: 1, 
             rel: 0, 
@@ -325,14 +325,18 @@ const VideoDetail = () => {
           events: {
             onReady: (e) => {
               setPlayer(e.target);
-              e.target.pauseVideo();
+              try {
+                e.target.playVideo();
+              } catch (playErr) {
+                console.warn("Autoplay block detected:", playErr);
+              }
               e.target.setVolume(volume);
               if (lastPlaybackTime > 0) {
                 e.target.seekTo(lastPlaybackTime, true);
                 setLastPlaybackTime(0); // reset once consumed
               }
               if (playbackSpeedRef.current !== 1) e.target.setPlaybackRate(playbackSpeedRef.current);
-              setIsPlaying(false);
+              setIsPlaying(true);
               setIsMuted(e.target.isMuted());
               setDuration(e.target.getDuration() || 0);
               updateAudioTracks(e.target);
@@ -368,29 +372,9 @@ const VideoDetail = () => {
         setPlayer(null); setIsPlaying(false);
       }
     };
-  }, [playerServer]);
+  }, [playerServer, activeVideo?.id]);
 
-  // Load new video when activeVideo ID changes, reusing the existing player instance
-  useEffect(() => {
-    if (player && activeVideo?.id && playerServer === "youtube") {
-      try {
-        if (typeof player.cueVideoById === "function") {
-          const currentVideoId = player.getVideoData()?.video_id;
-          if (currentVideoId !== activeVideo.id) {
-            console.log("Reusing player, cueing video:", activeVideo.id);
-            player.cueVideoById(activeVideo.id);
-            if (playbackSpeedRef.current !== 1) {
-              player.setPlaybackRate(playbackSpeedRef.current);
-            }
-            setIsPlaying(false);
-            setCurrentTime(0);
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to load video on existing player instance:", e);
-      }
-    }
-  }, [activeVideo?.id, player, playerServer]);
+
 
   // Sleep timer
   useEffect(() => {
@@ -961,7 +945,7 @@ const VideoDetail = () => {
               <iframe
                 key={currentVideoState.id}
                 className="video-iframe"
-                src={`https://www.youtube-nocookie.com/embed/${currentVideoState.id}?autoplay=0&hl=vi&subtitles=vi&enablejsapi=1`}
+                src={`https://www.youtube-nocookie.com/embed/${currentVideoState.id}?autoplay=1&hl=vi&subtitles=vi&enablejsapi=1`}
                 title={currentVideoState.title}
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: "12px" }}
                 allow="autoplay; encrypted-media"
@@ -979,9 +963,10 @@ const VideoDetail = () => {
                   
                   <div className="autoplay-video-preview">
                     <img 
-                      src={relatedVideos[0].thumbnailUrl} 
+                      src={relatedVideos[0].thumbnailUrl || `https://i.ytimg.com/vi/${relatedVideos[0].id}/hqdefault.jpg`} 
                       alt={relatedVideos[0].title} 
                       className="autoplay-preview-thumb" 
+                      onError={e => { e.target.src = `https://i.ytimg.com/vi/${relatedVideos[0].id}/hqdefault.jpg`; }}
                     />
                     <div className="autoplay-preview-info">
                       <h4 className="autoplay-preview-title">{relatedVideos[0].title}</h4>
@@ -1317,7 +1302,7 @@ const VideoDetail = () => {
                 onMouseEnter={() => { prefetchVideo(video); prefetchChannel(video.channel); }}
               >
                 <div className="related-thumbnail-container">
-                  <img src={video.thumbnailUrl} alt={video.title} className="related-thumbnail" />
+                  <img src={video.thumbnailUrl || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`} alt={video.title} className="related-thumbnail" onError={e => { e.target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`; }} />
                   <span className="related-duration">{video.duration}</span>
                 </div>
                 <div className="related-info">

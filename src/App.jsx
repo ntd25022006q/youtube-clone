@@ -209,7 +209,7 @@ function AppContent() {
       </div>
       {activeVideo && (
         <div className={`global-watch-overlay ${isMiniplayerActive ? "mini-mode" : "full-mode"}`}>
-          <VideoDetail />
+          <VideoDetail key={activeVideo.id} />
         </div>
       )}
     </div>

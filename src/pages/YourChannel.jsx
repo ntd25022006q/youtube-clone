@@ -1,5 +1,5 @@
 import React, { useContext, useState } from "react";
-import { YoutubeContext } from "../context/YoutubeContext";
+import { YoutubeContext, getFallbackAvatar } from "../context/YoutubeContext";
 import VideoCard from "../components/VideoCard";
 import "./pages.css";
 
@@ -34,7 +34,7 @@ const YourChannel = () => {
       </div>
 
       <div className="channel-header-info">
-        <img src={currentUser.avatar} alt={currentUser.name} className="channel-large-avatar" />
+        <img src={currentUser.avatar} alt={currentUser.name} className="channel-large-avatar" onError={e => { e.target.src = getFallbackAvatar(currentUser.name); }} />
         <div className="channel-header-text">
           <h1 className="channel-header-name">{currentUser.name}</h1>
           <p className="channel-header-stats">

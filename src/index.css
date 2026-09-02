@@ -96,7 +96,8 @@ input {
 }
 
 .content-area {
-  flex-grow: 1;
+  flex-grow: 0;
+  flex-shrink: 0;
   padding: 24px;
   min-width: 0;
   margin-left: var(--sidebar-width);
