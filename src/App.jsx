@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import Header from "./components/Header";
 import Sidebar from "./components/Sidebar";
 import Home from "./pages/Home";
@@ -91,21 +91,13 @@ const LoadingBar = () => {
 };
 
 function AppContent() {
-  // Auto force-reload on bundle change to clear HMR/React context state cache
-  useEffect(() => {
-    const version = "1.0.9";
-    const saved = localStorage.getItem("yt_version");
-    if (saved !== version) {
-      localStorage.setItem("yt_version", version);
-      window.location.reload();
-    }
-  }, []);
-
-  const { activePage, isSidebarExpanded, activeVideo, searchQuery, isMiniplayerActive, backgroundPage } = useContext(YoutubeContext);
+  const { activePage, isSidebarExpanded, activeVideo, searchQuery, isMiniplayerActive, backgroundPage, toast, isNativeMode } = useContext(YoutubeContext);
 
   // Update browser document tab title dynamically
   useEffect(() => {
-    if (activePage === "watch" && activeVideo) {
+    if (isNativeMode || activePage === "native") {
+      document.title = "YouTube (Chế độ Gốc)";
+    } else if (activePage === "watch" && activeVideo) {
       document.title = `${activeVideo.title} - YouTube`;
     } else if (activePage === "search" && searchQuery) {
       document.title = `${searchQuery} - YouTube`;
@@ -130,12 +122,15 @@ function AppContent() {
     } else {
       document.title = "YouTube";
     }
-  }, [activePage, activeVideo, searchQuery]);
+  }, [activePage, activeVideo, searchQuery, isNativeMode]);
 
   // Switch-case based page routing
   const renderPage = () => {
+    
     const pageToRender = activePage === "watch" ? (backgroundPage || "home") : activePage;
     switch (pageToRender) {
+      case "native":
+        return <NativeYouTube />;
       case "search":
         return <SearchResults />;
       case "channel":
@@ -177,11 +172,7 @@ function AppContent() {
           </SignInGate>
         );
       case "downloads":
-        return (
-          <SignInGate title="Nội dung tải xuống" desc="Đăng nhập để quản lý các video đã tải xuống xem offline" icon={Download}>
-            <Downloads />
-          </SignInGate>
-        );
+        return <Downloads />;
       case "shorts":
         return <Shorts />;
       case "subscriptions":
@@ -190,10 +181,63 @@ function AppContent() {
             <Subscriptions />
           </SignInGate>
         );
+      case "watch":
+        if (!isMiniplayerActive) return null;
+        return <Home />;
       case "home":
       default:
         return <Home />;
     }
+  };
+
+  const showNative = false;
+
+  const [miniPos, setMiniPos] = useState({ x: null, y: null });
+  const isDraggingRef = useRef(false);
+  const dragStartRef = useRef({ mouseX: 0, mouseY: 0, posX: 0, posY: 0 });
+
+  useEffect(() => {
+    if (!isMiniplayerActive) {
+      setMiniPos({ x: null, y: null });
+    }
+  }, [isMiniplayerActive]);
+
+  const handleMiniDragStart = (e) => {
+    if (!isMiniplayerActive) return;
+    // Don't drag if clicking buttons, inputs or video player click mask
+    if (e.target.closest("button") || e.target.closest("input") || e.target.closest(".miniplayer-center-controls") || e.target.closest(".miniplayer-actions-col")) {
+      return;
+    }
+    isDraggingRef.current = true;
+    const overlayEl = document.querySelector(".global-watch-overlay.mini-mode");
+    const rect = overlayEl ? overlayEl.getBoundingClientRect() : { left: window.innerWidth - 384, top: window.innerHeight - 309 };
+    
+    dragStartRef.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      posX: rect.left,
+      posY: rect.top
+    };
+
+    const handlePointerMove = (moveEvent) => {
+      if (!isDraggingRef.current) return;
+      const deltaX = moveEvent.clientX - dragStartRef.current.mouseX;
+      const deltaY = moveEvent.clientY - dragStartRef.current.mouseY;
+      
+      const newX = Math.max(10, Math.min(window.innerWidth - 370, dragStartRef.current.posX + deltaX));
+      const newY = Math.max(60, Math.min(window.innerHeight - 295, dragStartRef.current.posY + deltaY));
+      
+      setMiniPos({ x: newX, y: newY });
+    };
+
+    const handlePointerUp = () => {
+      isDraggingRef.current = false;
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
   };
 
   return (
@@ -201,25 +245,123 @@ function AppContent() {
       <LoadingBar />
       <Header />
       <div className="main-layout">
-        {/* Render Sidebar on normal pages. On watch page, render Sidebar only when it is expanded (drawer mode) */}
-        {(activePage !== "watch" || isSidebarExpanded) && <Sidebar />}
-        <main className={`content-area ${activePage === "watch" ? "no-sidebar" : (!isSidebarExpanded ? "collapsed" : "")}`}>
+        {/* Render Sidebar only in custom Pro mode */}
+        {!showNative && (activePage !== "watch" || isSidebarExpanded) && <Sidebar />}
+        <main className={`content-area ${showNative || activePage === "watch" ? "no-sidebar" : (!isSidebarExpanded ? "collapsed" : "")}`} style={showNative ? { padding: 0, margin: 0, maxWidth: "100%", width: "100%", height: "calc(100vh - 56px)" } : {}}>
           {renderPage()}
         </main>
       </div>
-      {activeVideo && (
-        <div className={`global-watch-overlay ${isMiniplayerActive ? "mini-mode" : "full-mode"}`}>
+      {!showNative && activeVideo && (
+        <div 
+          className={`global-watch-overlay ${isMiniplayerActive ? "mini-mode" : "full-mode"}`}
+          style={isMiniplayerActive && miniPos.x !== null ? { left: `${miniPos.x}px`, top: `${miniPos.y}px`, right: 'auto', bottom: 'auto' } : {}}
+          onPointerDown={handleMiniDragStart}
+        >
           <VideoDetail key={activeVideo.id} />
+        </div>
+      )}
+
+      {/* Global Bottom-Left Toast Notification */}
+      {toast && toast.visible && (
+        <div className="yt-global-toast">
+          <span>{toast.message}</span>
         </div>
       )}
     </div>
   );
 }
 
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("App Error caught by ErrorBoundary:", error, errorInfo);
+    localStorage.removeItem("yt_active_video");
+    localStorage.removeItem("yt_active_channel");
+    localStorage.setItem("yt_active_page", "home");
+  }
+
+  handleReset = () => {
+    localStorage.clear();
+    this.setState({ hasError: false, error: null });
+    window.location.href = "/";
+  };
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          minHeight: "100vh",
+          backgroundColor: "#0f0f0f",
+          color: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "24px",
+          fontFamily: "Roboto, Arial, sans-serif",
+          textAlign: "center"
+        }}>
+          <svg viewBox="0 0 24 24" width="64" height="64" fill="#FF0000" style={{ marginBottom: "16px" }}>
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
+          </svg>
+          <h2 style={{ fontSize: "22px", marginBottom: "12px", fontWeight: "500" }}>Đã xảy ra sự cố</h2>
+          <p style={{ color: "#aaa", fontSize: "14px", maxWidth: "450px", marginBottom: "24px", lineHeight: "1.5" }}>
+            Đã có lỗi bất ngờ khi tải trang. Nhấn vào nút bên dưới để khôi phục lại trang chủ YouTube.
+          </p>
+          {this.state.error && (
+            <pre style={{
+              background: "rgba(255, 0, 0, 0.1)",
+              border: "1px solid rgba(255, 0, 0, 0.3)",
+              color: "#ff8888",
+              padding: "12px 16px",
+              borderRadius: "8px",
+              maxWidth: "600px",
+              fontSize: "12px",
+              textAlign: "left",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-all",
+              marginBottom: "20px"
+            }}>
+              {String(this.state.error?.message || this.state.error)}
+            </pre>
+          )}
+          <button
+            onClick={this.handleReset}
+            style={{
+              backgroundColor: "#cc0000",
+              color: "#fff",
+              border: "none",
+              padding: "10px 24px",
+              borderRadius: "20px",
+              fontSize: "14px",
+              fontWeight: "500",
+              cursor: "pointer",
+              transition: "background-color 0.2s"
+            }}
+          >
+            Tải lại trang chủ
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <YoutubeProvider>
-      <AppContent />
-    </YoutubeProvider>
+    <ErrorBoundary>
+      <YoutubeProvider>
+        <AppContent />
+      </YoutubeProvider>
+    </ErrorBoundary>
   );
 }

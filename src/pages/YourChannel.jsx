@@ -3,11 +3,24 @@ import { YoutubeContext, getFallbackAvatar } from "../context/YoutubeContext";
 import VideoCard from "../components/VideoCard";
 import "./pages.css";
 
+import { User } from "lucide-react";
+
 const YourChannel = () => {
-  const { currentUser, videos, formatVideosCountVi } = useContext(YoutubeContext);
+  const { currentUser, videos, formatVideosCountVi, setShowLoginModal } = useContext(YoutubeContext);
   const [activeTab, setActiveTab] = useState("Videos");
 
-  if (!currentUser) return null;
+  if (!currentUser) {
+    return (
+      <div className="channel-page-container" style={{ padding: "60px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <User size={64} style={{ opacity: 0.3, marginBottom: "16px" }} />
+        <h2 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px" }}>Kênh của bạn</h2>
+        <p style={{ color: "#aaa", fontSize: "14px", maxWidth: "420px", marginBottom: "20px" }}>Đăng nhập để xem kênh cá nhân, quản lý video và tùy chỉnh hồ sơ của bạn.</p>
+        <button className="google-signin-btn-blue" onClick={() => setShowLoginModal(true)}>
+          <span>Đăng nhập</span>
+        </button>
+      </div>
+    );
+  }
 
   // Filter videos uploaded by the logged-in user
   const uploadedVideos = videos.filter(v => v.channel && v.channel.name === currentUser.name);

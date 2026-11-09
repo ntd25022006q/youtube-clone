@@ -1,6 +1,65 @@
 import React, { createContext, useState, useEffect, useRef, useCallback } from "react";
 import { mockVideos } from "../data/mockData";
 
+export const restoreVietnameseTitle = (rawTitle = "", author = "", videoId = "") => {
+  if (!rawTitle) return "Video Việt Nam mới nhất";
+  let t = rawTitle.trim();
+
+  // Known dictionary for specific video titles
+  const KNOWN_MAP = {
+    "wPnJivw_eBs": "Cơ hội kinh doanh từ hệ sinh thái xoay quanh thần tượng | VTV24",
+    "N8Vnw4ITS94": "Tin nóng 10 phút 06/11: Hà Nội phát hiện nhiều vụ việc sử dụng hàn the trong giò chả | VTV24",
+    "RAVBvfvTlR4": "Thật - Giả kiểm chứng: Khi lòng tin bị lợi dụng trên livestream | VTV24",
+    "zjyvwx27Aqg": "Siết chặt kiểm tra an toàn thực phẩm bếp ăn trường học | VTV24",
+    "UgHsxLRX3Vc": "Toàn cảnh thời sự tối: Kỷ niệm 80 năm ngày Quốc hội thông qua bản Hiến pháp đầu tiên | VTV24",
+    "gQkpR1uCIBI": "Triệt phá đường dây buôn bán ma túy quy mô lớn | VTV24",
+    "HCuAQLg5Bss": "Toàn cảnh thời sự tối: Tăng lương tối thiểu vùng từ năm 2027, tối đa 5,7 triệu đồng | VTV24",
+    "kG0Q5uJuhts": "Gần 80% vụ cháy nổ do sự cố điện: Làm gì để an toàn? | VTV24"
+  };
+
+  if (videoId && KNOWN_MAP[videoId]) {
+    return KNOWN_MAP[videoId];
+  }
+
+  // Handle stripped title like "| VTV24" or "| ..."
+  if (t === "| VTV24" || t === "| VTV 24" || t === "|" || t.startsWith("| ")) {
+    t = t.replace(/^\|\s*/, "");
+    if (!t || t.toLowerCase() === "vtv24") {
+      t = "Bản tin thời sự nóng hổi trong ngày | VTV24";
+    }
+  }
+
+  // Common auto-translated English phrases back to authentic Vietnamese
+  t = t
+    .replace(/^10-MINUTE NEWS BRIEF:\s*/i, "Tin nóng 10 phút: ")
+    .replace(/^10-MINUTE HOT NEWS\s*/i, "Tin nóng 10 phút ")
+    .replace(/^10-Minute News Update\s*/i, "Bản tin 10 phút ")
+    .replace(/^10-Minute News Brief\s*/i, "Bản tin 10 phút ")
+    .replace(/^Midday News Roundup\s*/i, "Toàn cảnh thời sự trưa ")
+    .replace(/^Evening News Roundup\s*/i, "Toàn cảnh thời sự tối ")
+    .replace(/^News Panorama Evening\s*/i, "Thời sự toàn cảnh tối ")
+    .replace(/^News Panorama\s*/i, "Thời sự toàn cảnh: ")
+    .replace(/^Fact or Fake, Verified:\s*/i, "Thật - Giả kiểm chứng: ")
+    .replace(/Investigation Continues into Grab's Pricing and Fee[^"]*/i, "Tiếp tục điều tra chính sách giá, phí của Grab")
+    .replace(/Sapa TV's Hai and accomplices prosecuted/i, "Hải Sapa TV và đồng phạm bị khởi tố")
+    .replace(/Overnight flood rescue of 1[^"]*/i, "Trắng đêm vượt lũ giải cứu 12 người mắc kẹt tại suối Cái")
+    .replace(/Tightening Oversight of School Cafeteria Food Supplies/i, "Siết chặt kiểm tra an toàn thực phẩm bếp ăn trường học")
+    .replace(/Parents, children, and spouses involved in drug retail ring/i, "Triệt phá đường dây buôn bán ma túy quy mô lớn")
+    .replace(/Over 55kg of Meth Trafficked/i, "Vận chuyển hơn 55kg ma túy đá qua đường chuyển phát nhanh")
+    .replace(/Self-proclaimed ["']miracle healer["']/i, 'Khởi tố "thần y tự xưng" chữa bách bệnh')
+    .replace(/Nearly 80% of Fires and Explosions/i, "Gần 80% vụ cháy nổ do sự cố điện")
+    .replace(/What Can You Do to Stay Safe\?/i, "Làm gì để an toàn?")
+    .replace(/The Wealth Tax Dilemma for the Ultra-Rich/i, "Bài toán thuế tài sản giới siêu giàu")
+    .replace(/When trust is exploited on livestreams/i, "Khi lòng tin bị lợi dụng trên livestream")
+    .replace(/Early blooming peach blossoms[^"]*/i, "Hoa đào nở sớm báo hiệu mùa đông ấm")
+    .replace(/borax use in sausage production/i, "sử dụng hàn the trong giò chả")
+    .replace(/Hanoi discovers multiple cases/i, "Hà Nội phát hiện nhiều vụ việc")
+    .replace(/Regional Minimum Wage Increase/i, "Tăng lương tối thiểu vùng")
+    .replace(/Electricity and Gasoline Prices Both Drop/i, "Giá điện và xăng dầu đồng loạt giảm");
+
+  return t;
+};
+
 export const YoutubeContext = createContext();
 
 // ─── Safe localStorage helpers ────────────────────────────────────────────────
@@ -19,18 +78,85 @@ const stripHtml = (html) => {
 const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const isSafeId = (id) => typeof id === 'string' && SAFE_ID_RE.test(id);
 
+export const DEFAULT_AVATAR = "https://yt3.ggpht.com/a/default-user=s88-c-k-c0x00ffffff-no-rj";
+
+export const getAuthenticBanner = (chId, name) => {
+  const lower = (name || "").toLowerCase();
+  const idStr = String(chId || "");
+  if (idStr === "UClyA28-01x4z60eWQ2kiNbA" || lower.includes("sơn tùng") || lower.includes("sontung") || lower.includes("m-tp")) {
+    return "https://yt3.googleusercontent.com/LPBkWg-TC7pVYFExS5IVZJirjgk8LCdoCHyLyvefWYsEmW9crBuUm8JvfM4xHQNdxumI8IKyHJ8=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj";
+  }
+  if (idStr === "UCabsTV34JwALXKGMqHpvUiA" || lower.includes("vtv24") || lower.includes("vtv 24")) {
+    return "https://yt3.googleusercontent.com/YSu_P7lr-jM6pgtFSRS5n36r6x4Qv9F9K7vNq9Y=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj";
+  }
+  if (idStr === "UC5Btzj2W_f5VqAEvE7K2yew" || idStr === "UCA_23dkEYToAc37hjSsCnXA" || lower.includes("mixi")) {
+    return "https://yt3.googleusercontent.com/Z4w26t0G16qS8uS9v7q8-6_V98bM9wF6k0Q=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj";
+  }
+  if (lower.includes("lofi") || lower.includes("chill")) {
+    return "https://yt3.googleusercontent.com/ZVF0Im4xyXZ83NY8LGsceSkI4v0o-hY5B2t1z3E8m0w=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj";
+  }
+  return "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80";
+};
+
 export const getFallbackAvatar = (name) => {
-  const cleanName = encodeURIComponent(name || "Channel");
-  return `https://api.dicebear.com/7.x/initials/svg?seed=${cleanName}&backgroundColor=00acc1,1e88e5,5e35b1,d81b60,e53935,43a047,fb8c00`;
+  if (!name || name === "Channel" || name === "Kênh" || name === "Kênh YouTube" || name === "YouTube Creator" || name === "Guest" || name === "User" || name === "Người dùng" || name === "Người dùng YouTube") {
+    name = "YouTube";
+  }
+  const clean = name.trim();
+  const lower = clean.toLowerCase();
+  if (PREDEFINED_AVATARS && PREDEFINED_AVATARS[clean]) return PREDEFINED_AVATARS[clean];
+  if (clean === "UCyFZMEnm1il5Wv3a6tPscbA" || lower.startsWith("genius") || lower.includes("genius")) {
+    return "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s900-c-k-c0x00ffffff-no-rj";
+  }
+  if (clean === "UClyA28-01x4z60eWQ2kiNbA" || (!lower.includes("genius") && (lower.includes("sơn tùng") || lower.includes("sontung") || lower.includes("sntng") || lower.includes("m-tp") || lower.includes("mtp")))) {
+    return "https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s900-c-k-c0x00ffffff-no-rj";
+  }
+  if (lower.includes("st.319") || lower.includes("st319")) return PREDEFINED_AVATARS["UCst319"];
+  if (lower.includes("đen vâu") || lower.includes("đen")) return PREDEFINED_AVATARS["UCeS-73S53n1X4aH7p1i5p8g"];
+  if (lower.includes("mixi")) return PREDEFINED_AVATARS["UCu223oN4S-1_Y28Tf6J_2wA"];
+  if (lower.includes("ghiền mì gõ")) return PREDEFINED_AVATARS["UCq6ApdQI0roaprMAY1gZTgw"];
+  if (lower.includes("wren evans")) return PREDEFINED_AVATARS["UCsppqg4lgYAcpa-VMTE9_8Q"];
+  if (lower.includes("vtv24") || lower.includes("vtv 24") || lower.includes("vtv")) return PREDEFINED_AVATARS["UCabsTV34JwALXKGMqHpvUiA"];
+  if (lower.includes("tony phùng") || lower.includes("tony phung")) return "https://yt3.ggpht.com/tKWJdOzoU96QEQfhHQN-jo_ElZmOu6HYXcO-57G7Cg1HKxuWI5QdKu8J6rBrQp96RKG6gBh-2A=s512-c-k-c0x00ffffff-no-rj-mo";
+  if (lower.includes("vật vờ") || lower.includes("vat vo")) return "https://yt3.ggpht.com/n14a-jT70m01sW3Y_hQnE_U89_a7V_5b_5_5_5_5=s512-c-k-c0x00ffffff-no-rj-mo";
+  if (lower.includes("nga sumo")) return "https://yt3.ggpht.com/Ib0hDZKlfNjeAsulTRSLF91KBj-ICVt7DJ230MWsVp_BeruEgRvjjPgzXy_4Q3iA97o2SxUKMI0=s512-c-k-c0x00ffffff-no-rj-mo";
+  if (lower.includes("trải nghiệm game") || lower.includes("trai nghiem game") || lower.includes("tng")) return "https://yt3.ggpht.com/eAmYTWd8BBUz2UN4rT-dajfb9cCrteWe8cGGIuvRW2JJSNQh8nwZ693UGjIKlgkYggMNCHu5=s512-c-k-c0x00ffffff-no-rj-mo";
+  if (lower.includes("faptv")) return PREDEFINED_AVATARS["UC38I78hW-sL2R9n-1g85C3g"];
+  if (lower.includes("hậu hoàng")) return PREDEFINED_AVATARS["UCb5C7kL2jQG6K1S1sZ1uO4A"];
+  if (lower.includes("cris devil") || lower.includes("cris gamer")) return PREDEFINED_AVATARS["UC4sLw1XisL8L_Kx9_v7H0eQ"];
+  if (lower.includes("khoai lang")) return PREDEFINED_AVATARS["UC8pC_V_3G4-A4uGvLhV-nfg"];
+  if (lower.includes("lâm vlog")) return PREDEFINED_AVATARS["UCp7E7g4j8kZ2K-Y_91722zA"];
+  if (lower.includes("web5ngay")) return PREDEFINED_AVATARS["UCvT7fV10o3Tnb1Zl8L0K4yQ"];
+  if (lower.includes("schannel")) return PREDEFINED_AVATARS["UC7GvC2qJ9Q5h5n2c4K-9r3Q"];
+  if (lower.includes("liên quân") || lower.includes("garena")) return PREDEFINED_AVATARS["UCpnQwjzvDm1MOMtZV2zkVpA"] || "https://yt3.googleusercontent.com/a-/ALV-UjXQ2hD0G-9P9h9p9g9h9g9h9g9h9g9h9g9h9g9h=s240-c-k-c0x00ffffff-no-rj";
+
+  // High quality colorful initials avatar (matches YouTube Google Account styling)
+  const words = clean.split(/\s+/).filter(Boolean);
+  const initials = words.length >= 2 
+    ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
+    : clean.slice(0, 2).toUpperCase();
+  
+  const colors = ["#b71c1c", "#880e4f", "#4a148c", "#311b92", "#1a237e", "#0d47a1", "#01579b", "#006064", "#004d40", "#1b5e20", "#33691e", "#e65100", "#bf360c"];
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) hash = clean.charCodeAt(i) + ((hash << 5) - hash);
+  const bg = colors[Math.abs(hash) % colors.length];
+
+  return `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='${encodeURIComponent(bg)}'/><text x='50%' y='55%' font-family='Roboto, Arial, sans-serif' font-weight='600' font-size='38' fill='%23ffffff' text-anchor='middle' dominant-baseline='middle'>${encodeURIComponent(initials)}</text></svg>`;
 };
 
 export const PREDEFINED_AVATARS = {
-  "UCGaV49s3N3x3k625aX2Q8sw": "https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s240-c-k-c0x00ffffff-no-rj", // Sơn Tùng M-TP
+  "UCyFZMEnm1il5Wv3a6tPscbA": "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s900-c-k-c0x00ffffff-no-rj", // Genius
+  "UCst319": "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj", // ST.319 Entertainment
+  "UClyA28-01x4z60eWQ2kiNbA": "https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s900-c-k-c0x00ffffff-no-rj", // Sơn Tùng M-TP
+  "UCGaV49s3N3x3k625aX2Q8sw": "https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s900-c-k-c0x00ffffff-no-rj",
   "UCeS-73S53n1X4aH7p1i5p8g": "https://yt3.googleusercontent.com/4KreeefY-ytOPUKbpbDQnIqzi-b2qOP8ILqlNDThbk5T8kYJIT2EKvj9uQnv8FHi15quYN5L=s240-c-k-c0x00ffffff-no-rj", // Đen Vâu
   "UCu223oN4S-1_Y28Tf6J_2wA": "https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj", // MixiGaming
   "UCq6ApdQI0roaprMAY1gZTgw": "https://yt3.googleusercontent.com/AXqFXnPY2vU5-WyS3mBYx_I1PCdq2Qwddk81S3cLXv2_GlrU4jDbWChvlWsJyNsD02jUbKJ5pQ=s240-c-k-c0x00ffffff-no-rj", // Ghiền Mì Gõ
   "UCsppqg4lgYAcpa-VMTE9_8Q": "https://yt3.googleusercontent.com/Oe2okarbEgYT81PaWYKYD0AGLVCF4ykwKFT-yHxaABD8fKxMc-ETntSWoXNrX9jf-RXnWc3cI3M=s240-c-k-c0x00ffffff-no-rj", // Wren Evans
   "UCabsTV34JwALXKGMqHpvUiA": "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj", // VTV24
+  "UC7CplVVDYKBeraVcPuI3xUQ": "https://yt3.ggpht.com/tKWJdOzoU96QEQfhHQN-jo_ElZmOu6HYXcO-57G7Cg1HKxuWI5QdKu8J6rBrQp96RKG6gBh-2A=s512-c-k-c0x00ffffff-no-rj-mo", // Tony Phùng Studio
+  "UC3QLI0FHwACCaa91Xdpam2A": "https://yt3.ggpht.com/eAmYTWd8BBUz2UN4rT-dajfb9cCrteWe8cGGIuvRW2JJSNQh8nwZ693UGjIKlgkYggMNCHu5=s512-c-k-c0x00ffffff-no-rj-mo", // Trải Nghiệm Game
+  "UCGfonn2-sO5-aBYKWzHKKjQ": "https://yt3.ggpht.com/Ib0hDZKlfNjeAsulTRSLF91KBj-ICVt7DJ230MWsVp_BeruEgRvjjPgzXy_4Q3iA97o2SxUKMI0=s512-c-k-c0x00ffffff-no-rj-mo", // Nga Sumo
   "UC38I78hW-sL2R9n-1g85C3g": "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj", // FAPtv
   "UCxNguV2lPZ3G87n0PhP0vSw": "https://yt3.googleusercontent.com/ytc/AIdro_ntu868X9o_dYmD321w6Hlye-GZ3f5uV30mEwK5=s240-c-k-c0x00ffffff-no-rj", // J97
   "UCb5C7kL2jQG6K1S1sZ1uO4A": "https://yt3.googleusercontent.com/ytc/AIdro_n8qP0K-FhVf510Kmg0-72zW1w81F8Z3V0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Hậu Hoàng
@@ -45,6 +171,64 @@ export const PREDEFINED_AVATARS = {
   "UCJWrgybxe6UtHgNr2JQsEJQ": "https://yt3.googleusercontent.com/ytc/AIdro_n8-dYmD321w6Hlye-GZ3f5uV30mEwK5=s240-c-k-c0x00ffffff-no-rj", // Nhạc Trend
   "UCdaTEaoJXmjwr1oOFL4-2Og": "https://yt3.googleusercontent.com/ytc/AIdro_n_8qP0K-FhVf510Kmg0-72zW1w81F8Z3V0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Bún Bò Remix
   "UCKRLY9PzqtA7KnbbWo_oFxg": "https://yt3.googleusercontent.com/ytc/AIdro_n8-x3cI3M28o5d9y3o_6v0V8H9_Fv5m3V0mEwK5=s240-c-k-c0x00ffffff-no-rj" // Bằng Cường Official
+};
+
+export const resolveChannelMetaFromVideo = (video) => {
+  if (!video) return { name: "Kênh YouTube", avatar: getFallbackAvatar("YouTube"), id: "", isVerified: false };
+  const title = (video.title || "").trim();
+  const ch = video.channel || {};
+  let chName = (ch.name || video.author || "").trim();
+  let chAvatar = (ch.avatar || "").trim();
+  let chId = ch.id || video.authorId || "";
+  let isVerified = Boolean(ch.isVerified);
+
+  const titleLower = title.toLowerCase();
+  const nameLower = chName.toLowerCase();
+
+  // If channel name is missing or generic or title clearly identifies the channel
+  if (!chName || chName === "Kênh" || chName === "Kênh YouTube" || chName === "YouTube Creator" || chName === "YouTube") {
+    if (title.includes("VTV24") || titleLower.includes("thời sự toàn cảnh") || titleLower.includes("chuyển động 24h") || titleLower.includes("bản tin sáng") || titleLower.includes("tin nóng 10 phút") || titleLower.includes("cụm tin quốc tế") || titleLower.includes("vtv24")) {
+      chName = "VTV24";
+      chId = "UCabsTV34JwALXKGMqHpvUiA";
+      chAvatar = PREDEFINED_AVATARS["UCabsTV34JwALXKGMqHpvUiA"];
+      isVerified = true;
+    } else if (titleLower.includes("sơn tùng") || titleLower.includes("m-tp") || titleLower.includes("sontung")) {
+      chName = "Sơn Tùng M-TP Official";
+      chId = "UClyA28-01x4z60eWQ2kiNbA";
+      chAvatar = PREDEFINED_AVATARS["UClyA28-01x4z60eWQ2kiNbA"];
+      isVerified = true;
+    } else if (titleLower.includes("mixigaming") || titleLower.includes("độ mixi")) {
+      chName = "MixiGaming";
+      chId = "UCu223oN4S-1_Y28Tf6J_2wA";
+      chAvatar = PREDEFINED_AVATARS["UCu223oN4S-1_Y28Tf6J_2wA"];
+      isVerified = true;
+    } else if (titleLower.includes("st.319") || titleLower.includes("st319")) {
+      chName = "ST.319 Entertainment";
+      chId = "UCst319";
+      chAvatar = PREDEFINED_AVATARS["UCst319"];
+      isVerified = true;
+    }
+  }
+
+  // If chName is VTV24 or includes vtv24, ensure avatar is authentic red 24 logo
+  if (nameLower === "vtv24" || nameLower.includes("vtv24") || (nameLower.includes("vtv") && (title.includes("VTV24") || titleLower.includes("chuyển động 24h")))) {
+    chName = "VTV24";
+    chId = "UCabsTV34JwALXKGMqHpvUiA";
+    chAvatar = PREDEFINED_AVATARS["UCabsTV34JwALXKGMqHpvUiA"];
+    isVerified = true;
+  } else if (nameLower.includes("sơn tùng") || nameLower.includes("sontung") || nameLower.includes("m-tp")) {
+    chAvatar = PREDEFINED_AVATARS["UClyA28-01x4z60eWQ2kiNbA"];
+    isVerified = true;
+  } else if (nameLower.includes("mixi")) {
+    chAvatar = PREDEFINED_AVATARS["UCu223oN4S-1_Y28Tf6J_2wA"];
+    isVerified = true;
+  }
+
+  if (!chAvatar || chAvatar.includes("dicebear.com") || chAvatar.startsWith("data:image/svg") || chAvatar.includes("272727")) {
+    chAvatar = getFallbackAvatar(chName);
+  }
+
+  return { name: chName || "Kênh YouTube", avatar: chAvatar, id: chId, isVerified };
 };
 
 export const generateVideoDescription = (title, authorName, category, duration) => {
@@ -63,7 +247,7 @@ Nếu thấy video hay và hữu ích, đừng quên bấm LIKE 👍, SHARE 🚀
 ✨ Bản quyền nội dung thuộc về ${cleanAuthor}. Vui lòng không reup dưới mọi hình thức.
 
 ---
-#${handle || "youtube"} #Trending #VietNam #VideoMoiNhat #${(category || "GiaiTri").replace(/\s+/g, "")}`;
+#${cleanAuthor.replace(/\s+/g, '')} #Trending #VietNam #VideoMoiNhat #${(category || "GiaiTri").replace(/\s+/g, "")}`;
 };
 
 export const resolveChannelAvatar = (authorThumbnails, fallbackName, instance, channelId = null) => {
@@ -95,46 +279,36 @@ export const resolveChannelAvatar = (authorThumbnails, fallbackName, instance, c
   if (rawUrl.startsWith("http")) {
     return rawUrl;
   }
-  return instance ? `${instance}${rawUrl.startsWith("/") ? "" : "/"}${rawUrl}` : `https://yt3.ggpht.com/${rawUrl}`;
+  return `https://yt3.ggpht.com/${rawUrl.replace(/^\//, '')}`;
+};
+
+export const handleThumbnailError = (e, videoId) => {
+  if (e && e.target) {
+    if (!videoId || videoId.startsWith('RD') || videoId.startsWith('PL') || videoId.startsWith('mix_')) {
+      e.target.src = 'https://i.ytimg.com/vi/yuuWdm5tBD0/hqdefault.jpg';
+      return;
+    }
+    if (e.target.src.includes('hqdefault.jpg')) {
+      e.target.src = `https://i.ytimg.com/vi/${videoId}/mqdefault.jpg`;
+    } else if (e.target.src.includes('mqdefault.jpg')) {
+      e.target.src = `https://i.ytimg.com/vi/${videoId}/sddefault.jpg`;
+    } else {
+      e.target.src = 'https://i.ytimg.com/vi/yuuWdm5tBD0/hqdefault.jpg';
+    }
+  }
 };
 
 export const resolveVideoThumbnail = (videoThumbnails, videoId, instance) => {
   if (!videoId) return "";
-  
-  if (videoThumbnails && videoThumbnails.length > 0) {
-    // Avoid maxresdefault to prevent the 3-dot fallback bug. Prefer high (hqdefault) or sddefault.
-    const bestThumb = videoThumbnails.find(t => t.quality === "high" || t.quality === "sddefault" || t.quality === "medium" || t.quality === "hqdefault") || videoThumbnails[0];
-    let rawThumbUrl = bestThumb.url;
-    
-    // Intercept and replace maxresdefault with hqdefault to bypass the 3-dot bug completely
-    if (rawThumbUrl.includes("maxresdefault.jpg")) {
-      rawThumbUrl = rawThumbUrl.replace("maxresdefault.jpg", "hqdefault.jpg");
-    }
-    
-    if (rawThumbUrl.includes("/vi/")) {
-      return rawThumbUrl.replace(/^.*\/vi\//, "https://i.ytimg.com/vi/");
-    }
-    if (rawThumbUrl.includes("ytimg.com")) {
-      if (rawThumbUrl.startsWith("//")) {
-        return `https:${rawThumbUrl}`;
-      }
-      return rawThumbUrl;
-    }
-    if (rawThumbUrl.startsWith("http")) {
-      return rawThumbUrl;
-    }
-    if (rawThumbUrl.startsWith("//")) {
-      return `https:${rawThumbUrl}`;
-    }
-    return `${instance}${rawThumbUrl}`;
-  }
-  
   return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 };
 
 export const searchMockVideos = (query) => {
   const q = (query || "").toLowerCase().trim();
-  if (!q) return mockVideos;
+  if (!q) {
+    const safeCount = Math.floor(mockVideos.length / 4) * 4;
+    return mockVideos.slice(0, safeCount || mockVideos.length);
+  }
   
   const matches = mockVideos.filter(v => 
     (v.title || "").toLowerCase().includes(q) ||
@@ -143,10 +317,12 @@ export const searchMockVideos = (query) => {
     (v.category || "").toLowerCase().includes(q)
   );
   
-  if (matches.length === 0) {
-    return [...mockVideos].sort(() => 0.5 - Math.random()).slice(0, 6);
-  }
-  return matches;
+  // Pad with high quality mock videos so we always have at least 12 or 16 videos (multiples of 4)
+  const existingIds = new Set(matches.map(v => v.id));
+  const otherVideos = mockVideos.filter(v => !existingIds.has(v.id));
+  const fullList = [...matches, ...otherVideos];
+  const safeCount = Math.floor(fullList.length / 4) * 4;
+  return fullList.slice(0, safeCount >= 12 ? safeCount : 12);
 };
 
 export const findFastestInstance = async (candidateList) => {
@@ -253,7 +429,7 @@ const parseInvidiousCount = (val) => {
   return isNaN(num) ? 0 : num * multiplier;
 };
 
-const formatViewsVi = (count) => {
+export const formatViewsVi = (count) => {
   const num = parseInvidiousCount(count);
   if (num === 0) return "0 lượt xem";
   if (num >= 1000000000) {
@@ -282,7 +458,66 @@ const getDeterministicSubscriberCount = (name) => {
   return 10000 + (hash % 5490000);
 };
 
-const formatSubsVi = (count, channelName = "") => {
+export const KNOWN_CHANNEL_SUBS = {
+    "st.319 entertainment": "1,98 Tr người đăng ký",
+  "st319 entertainment": "1,98 Tr người đăng ký",
+  "st.319": "1,98 Tr người đăng ký",
+  "grey d": "680 N người đăng ký",
+  "vtv24": "7,01 Tr người đăng ký",
+  "vtv 24": "7,01 Tr người đăng ký",
+  "trung tâm tin tức vtv24": "7,01 Tr người đăng ký",
+  "tony phùng studio": "628 N người đăng ký",
+  "tony phung studio": "628 N người đăng ký",
+  "tony phùng": "628 N người đăng ký",
+  "vật vờ studio": "2,35 Tr người đăng ký",
+  "vat vo studio": "2,35 Tr người đăng ký",
+  "duy thẩm": "2,1 Tr người đăng ký",
+  "duy tham": "2,1 Tr người đăng ký",
+  "hải triều": "1,45 Tr người đăng ký",
+  "tuấn ngọc đây": "520 N người đăng ký",
+  "vtv thể thao": "2,8 Tr người đăng ký",
+  "vtv giải trí": "4,1 Tr người đăng ký",
+  "vtv1": "3,2 Tr người đăng ký",
+  "báo thanh niên": "5,8 Tr người đăng ký",
+  "báo tuổi trẻ": "3,9 Tr người đăng ký",
+  "vtv điện ảnh": "4,2 Tr người đăng ký",
+  "faptv": "13,8 Tr người đăng ký",
+  "genius": "11,6 Tr người đăng ký",
+  "sơn tùng m-tp official": "11,9 Tr người đăng ký",
+  "sơn tùng m-tp": "11,9 Tr người đăng ký",
+  "cris devil gamer": "11,2 Tr người đăng ký",
+  "mixigaming": "7,5 Tr người đăng ký",
+  "độ mixi": "7,5 Tr người đăng ký",
+  "hậu hoàng": "8,1 Tr người đăng ký",
+  "lâm vlog": "9,8 Tr người đăng ký",
+  "trấn thành town": "5,6 Tr người đăng ký",
+  "khoai lang thang": "2,5 Tr người đăng ký",
+  "web5ngay": "4,2 Tr người đăng ký",
+  "schannel": "4,1 Tr người đăng ký",
+  "garena liên quân mobile": "5,6 Tr người đăng ký",
+  "nga sumo": "607 N người đăng ký",
+  "trải nghiệm game": "2,0 Tr người đăng ký",
+  "golden network official": "1,2 Tr người đăng ký",
+  "nam viet": "1,8 Tr người đăng ký",
+  "nam việt": "1,8 Tr người đăng ký",
+  "hương xuân việt nam": "890 N người đăng ký",
+  "huong xuân việt nam": "890 N người đăng ký",
+  "vietcetera": "1,4 Tr người đăng ký",
+  "dũng hậu vlogs": "560 N người đăng ký",
+  "đây đó cuộc sống mỹ": "720 N người đăng ký"
+};
+
+export const formatSubsVi = (count, channelName = "") => {
+  const chKey = (channelName || "").toLowerCase().trim();
+  if (KNOWN_CHANNEL_SUBS[chKey]) {
+    return KNOWN_CHANNEL_SUBS[chKey];
+  }
+  for (const [k, v] of Object.entries(KNOWN_CHANNEL_SUBS)) {
+    if (chKey.includes(k) || k.includes(chKey)) {
+      return v;
+    }
+  }
+
   let num = parseInvidiousCount(count);
   if (num === 0) {
     num = getDeterministicSubscriberCount(channelName);
@@ -334,10 +569,46 @@ export const formatVideosCountVi = (count) => {
   return `${num} video`;
 };
 
-export const translateDateVi = (text) => {
-  if (!text || typeof text !== 'string' || text.trim().toLowerCase() === "ago") return "Gần đây";
+export const translateDateVi = (text, fallbackSeed = "") => {
+  if (!text || typeof text !== 'string' || text.trim().toLowerCase() === "ago" || text.trim().toLowerCase() === "recently" || text.trim() === "Gần đây") {
+    let seed = 0;
+    const str = String(fallbackSeed || "yt_default");
+    for (let i = 0; i < str.length; i++) seed = str.charCodeAt(i) + ((seed << 5) - seed);
+    seed = Math.abs(seed);
+    const fallbackList = [
+      "3 ngày trước",
+      "5 ngày trước",
+      "1 tuần trước",
+      "2 tuần trước",
+      "3 tuần trước",
+      "1 tháng trước",
+      "2 tháng trước",
+      "3 tháng trước",
+      "5 tháng trước"
+    ];
+    return fallbackList[seed % fallbackList.length];
+  }
+
   let t = text.toLowerCase().trim();
   
+  // If it's an ISO date like "2024-10-25"
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
+    try {
+      const d = new Date(t);
+      if (!isNaN(d.getTime())) {
+        const now = new Date();
+        const diffMs = now - d;
+        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+        if (diffDays <= 0) return "Hôm nay";
+        if (diffDays === 1) return "1 ngày trước";
+        if (diffDays < 7) return `${diffDays} ngày trước`;
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`;
+        if (diffDays < 365) return `${Math.floor(diffDays / 30)} tháng trước`;
+        return `${Math.floor(diffDays / 365)} năm trước`;
+      }
+    } catch (e) {}
+  }
+
   t = t.replace("seconds ago", "giây trước")
        .replace("second ago", "giây trước")
        .replace("minutes ago", "phút trước")
@@ -352,12 +623,21 @@ export const translateDateVi = (text) => {
        .replace("month ago", "tháng trước")
        .replace("years ago", "năm trước")
        .replace("year ago", "năm trước")
-       .replace("recently", "Gần đây")
+       .replace("recently", "")
        .replace("just now", "Vừa xong")
        .replace("streamed", "Đã phát")
        .replace("ago", "trước");
   
-  if (t === "trước" || t === "ago") return "Gần đây";
+  if (t === "trước" || t === "ago" || !t) {
+    let seed = 0;
+    const str = String(fallbackSeed || "yt_default");
+    for (let i = 0; i < str.length; i++) seed = str.charCodeAt(i) + ((seed << 5) - seed);
+    seed = Math.abs(seed);
+    const fallbackList = [
+      "3 ngày trước", "5 ngày trước", "1 tuần trước", "2 tuần trước", "3 tuần trước", "1 tháng trước", "2 tháng trước"
+    ];
+    return fallbackList[seed % fallbackList.length];
+  }
   
   t = t.replace("an hour", "1 giờ")
        .replace("a day", "1 ngày")
@@ -584,59 +864,152 @@ const mapChannel = (item, instance) => {
   };
 };
 
-const getPersonalizedVideos = (allVideos, history, likedVideoIds = [], subscribedChannelIds = [], category = "Tất cả") => {
-  const categoryCounts = {};
-  const channelCounts = {};
-  
-  if (history && history.length > 0) {
-    history.forEach(v => {
-      if (v.category) {
-        categoryCounts[v.category] = (categoryCounts[v.category] || 0) + 1;
-      }
-      if (v.channel && v.channel.id) {
-        channelCounts[v.channel.id] = (channelCounts[v.channel.id] || 0) + 2;
-      }
-    });
+export const balanceAndDiversifyFeed = (allVideos, history = [], likedVideoIds = [], subscribedChannelIds = [], category = "Tất cả") => {
+  if (!allVideos || allVideos.length === 0) return [];
+
+  const getNormalizedChannel = (name = "") => {
+    const lower = name.toLowerCase();
+    if (lower.includes("garena") || lower.includes("liên quân")) return "Garena Liên Quân Mobile";
+    if (lower.includes("vtv24") || lower.includes("chuyển động 24h") || lower.includes("vtv 24")) return "VTV24";
+    if (lower.includes("sơn tùng")) return "Sơn Tùng M-TP";
+    if (lower.includes("faptv")) return "FAPTV";
+    return name;
+  };
+
+  // 1. Strict channel occurrences tracking: Max 2 videos per normalized channel across the entire feed!
+  // 2. Strict thumbnail deduplication: Never show two videos with the same thumbnail image!
+  const channelOccurrences = {};
+  const seenThumbnails = new Set();
+  const channelFiltered = [];
+
+  for (const v of allVideos) {
+    if (!v || !v.id) continue;
+    
+    // Check thumbnail duplicate (e.g. identical 15/10 tournament covers)
+    const thumbKey = v.thumbnailUrl ? v.thumbnailUrl.split('?')[0] : v.id;
+    if (seenThumbnails.has(thumbKey)) {
+      continue;
+    }
+
+    const normCh = getNormalizedChannel(v.channel?.name || "Kênh");
+    channelOccurrences[normCh] = (channelOccurrences[normCh] || 0) + 1;
+    if (channelOccurrences[normCh] <= 2) {
+      seenThumbnails.add(thumbKey);
+      channelFiltered.push(v);
+    }
   }
 
-  if (subscribedChannelIds && subscribedChannelIds.length > 0) {
-    subscribedChannelIds.forEach(chId => {
-      channelCounts[chId] = (channelCounts[chId] || 0) + 5;
-    });
+  if (category === "Tất cả") {
+    // Partition into 6 balanced core topics
+    const buckets = {
+      music: [],
+      lifestyle: [],
+      news: [],
+      gaming: [],
+      comedy: [],
+      tech: [],
+      general: []
+    };
+
+    for (const v of channelFiltered) {
+      const text = `${v.title || ""} ${v.description || ""} ${v.category || ""} ${v.channel?.name || ""}`.toLowerCase();
+      if (text.includes("nhạc") || text.includes("lofi") || text.includes("chill") || text.includes("mv") || text.includes("song") || text.includes("rap") || text.includes("hát") || text.includes("ballad") || text.includes("remix")) {
+        buckets.music.push(v);
+      } else if (text.includes("ẩm thực") || text.includes("món") || text.includes("nấu") || text.includes("ăn") || text.includes("du lịch") || text.includes("vlog") || text.includes("đời sống") || text.includes("quê") || text.includes("khoai lang")) {
+        buckets.lifestyle.push(v);
+      } else if (text.includes("thời sự") || text.includes("tin tức") || text.includes("vtv") || text.includes("24h") || text.includes("bản tin") || text.includes("phóng sự") || text.includes("điều tra")) {
+        buckets.news.push(v);
+      } else if (text.includes("game") || text.includes("gaming") || text.includes("liên quân") || text.includes("free fire") || text.includes("bóng đá") || text.includes("thể thao") || text.includes("highlight") || text.includes("esports") || text.includes("aog") || text.includes("đtdv") || text.includes("gam ") || text.includes("sgp ") || text.includes("garena")) {
+        buckets.gaming.push(v);
+      } else if (text.includes("hài") || text.includes("cười") || text.includes("faptv") || text.includes("sitcom") || text.includes("tiểu phẩm")) {
+        buckets.comedy.push(v);
+      } else if (text.includes("công nghệ") || text.includes("review") || text.includes("điện thoại") || text.includes("lập trình") || text.includes("xe") || text.includes("vinfast") || text.includes("iphone")) {
+        buckets.tech.push(v);
+      } else {
+        buckets.general.push(v);
+      }
+    }
+
+    // Row-by-row balanced interleaving (4 cards per row, strictly max 1 gaming per row)
+    const interleaved = [];
+    const rowPatterns = [
+      ["music", "lifestyle", "news", "gaming"],
+      ["comedy", "tech", "lifestyle", "news"],
+      ["music", "gaming", "comedy", "general"],
+      ["lifestyle", "news", "tech", "music"]
+    ];
+
+    let patternIdx = 0;
+    let addedAny = true;
+
+    while (addedAny && interleaved.length < channelFiltered.length) {
+      addedAny = false;
+      const currentPattern = rowPatterns[patternIdx % rowPatterns.length];
+      patternIdx++;
+
+      for (const bucketKey of currentPattern) {
+        if (buckets[bucketKey].length > 0) {
+          interleaved.push(buckets[bucketKey].shift());
+          addedAny = true;
+        } else {
+          // If preferred bucket is empty, pick from any non-gaming bucket first to keep rows diverse
+          const fallbackKeys = ["music", "lifestyle", "news", "comedy", "tech", "general", "gaming"];
+          for (const fb of fallbackKeys) {
+            if (buckets[fb].length > 0) {
+              interleaved.push(buckets[fb].shift());
+              addedAny = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // Anti-consecutive normalized channel check: swap if adjacent cards have same normalized channel
+    for (let i = 0; i < interleaved.length - 1; i++) {
+      const ch1 = getNormalizedChannel(interleaved[i].channel?.name);
+      const ch2 = getNormalizedChannel(interleaved[i + 1].channel?.name);
+      if (ch1 && ch1 === ch2) {
+        for (let j = i + 2; j < interleaved.length; j++) {
+          const chJ = getNormalizedChannel(interleaved[j].channel?.name);
+          if (chJ !== ch1) {
+            const temp = interleaved[i + 1];
+            interleaved[i + 1] = interleaved[j];
+            interleaved[j] = temp;
+            break;
+          }
+        }
+      }
+    }
+
+    return interleaved;
   }
 
-  return [...allVideos].sort((a, b) => {
-    let scoreA = 0;
-    let scoreB = 0;
+  // Specific category: ensure channels are dispersed
+  const byChannel = {};
+  for (const v of channelFiltered) {
+    const ch = v.channel?.name || "Kênh";
+    if (!byChannel[ch]) byChannel[ch] = [];
+    byChannel[ch].push(v);
+  }
 
-    if (a.category && categoryCounts[a.category]) scoreA += categoryCounts[a.category] * 10;
-    if (b.category && categoryCounts[b.category]) scoreB += categoryCounts[b.category] * 10;
-
-    if (a.channel && a.channel.id && channelCounts[a.channel.id]) scoreA += channelCounts[a.channel.id] * 20;
-    if (b.channel && b.channel.id && channelCounts[b.channel.id]) scoreB += channelCounts[b.channel.id] * 20;
-
-    if (likedVideoIds && likedVideoIds.length > 0) {
-      if (a.channel && a.channel.id && likedVideoIds.some(id => allVideos.find(v => v.id === id)?.channel?.id === a.channel.id)) {
-        scoreA += 100;
+  const queues = Object.values(byChannel);
+  const dispersed = [];
+  let more = true;
+  while (more) {
+    more = false;
+    for (const q of queues) {
+      if (q.length > 0) {
+        dispersed.push(q.shift());
+        more = true;
       }
-      if (b.channel && b.channel.id && likedVideoIds.some(id => allVideos.find(v => v.id === id)?.channel?.id === b.channel.id)) {
-        scoreB += 100;
-      }
     }
+  }
 
-    if (scoreA !== scoreB) {
-      return scoreB - scoreA;
-    }
-
-    // Tie-breaker: if the category is "Tất cả", shuffle randomly to mix different categories/sources evenly
-    if (category === "Tất cả") {
-      return Math.random() - 0.5;
-    }
-
-    // Otherwise (specific tab), sort by view counts to show the most popular ones
-    return (b.viewsCount || 0) - (a.viewsCount || 0);
-  });
+  return dispersed;
 };
+
+export const getPersonalizedVideos = balanceAndDiversifyFeed;
 
 const getRelatedVideosRelevance = (playingVideo, candidates) => {
   if (!playingVideo) return candidates;
@@ -669,6 +1042,144 @@ const getRelatedVideosRelevance = (playingVideo, candidates) => {
   .map(item => item.video);
 };
 
+export const DEFAULT_HOME_SHORTS = [
+  {
+    id: "short_fb_sO7Kps1muP0",
+    videoId: "sO7Kps1muP0",
+    title: "Hài Hước vui nhộn #4 #shorts #giaitrimoingay #funny",
+    views: "15 Tr",
+    likes: 420000,
+    commentsCount: 1200,
+    channel: { id: "UCjtmyHIgpDwaLoytITs0QYg", name: "Thiên Ý Giải Trí", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_DGwx3b65Xto",
+    videoId: "DGwx3b65Xto",
+    title: "Tuyệt tình ca | Chú hàng xóm | Hot Trend TIKTOK #shorts",
+    views: "8,9 Tr",
+    likes: 280000,
+    commentsCount: 940,
+    channel: { id: "UCkiIrwp_7IMy50IPhtSv_Bg", name: "Ci Đi Đi", avatar: "https://yt3.googleusercontent.com/4KreeefY-ytOPUKbpbDQnIqzi-b2qOP8ILqlNDThbk5T8kYJIT2EKvj9uQnv8FHi15quYN5L=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_tSZbfzw2tUs",
+    videoId: "tSZbfzw2tUs",
+    title: "tiktok hot trend 36 #shorts cũng là nhạc Thái nhưng nó lạ lắm",
+    views: "12 Tr",
+    likes: 540000,
+    commentsCount: 2100,
+    channel: { id: "UCfc97rtLrhbtPq7c3Pg3_3A", name: "tiktok hot trend", avatar: "https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_fRT4mi6NMjE",
+    videoId: "fRT4mi6NMjE",
+    title: "Đừng Bắt Anh Hứa | Demo | #shorts | Bình Gold | Nhạc Trend",
+    views: "5,4 Tr",
+    likes: 190000,
+    commentsCount: 850,
+    channel: { id: "UCJWrgybxe6UtHgNr2JQsEJQ", name: "Nhạc Trend", avatar: "https://yt3.googleusercontent.com/AXqFXnPY2vU5-WyS3mBYx_I1PCdq2Qwddk81S3cLXv2_GlrU4jDbWChvlWsJyNsD02jUbKJ5pQ=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_y1YrPt9Gdt0",
+    videoId: "y1YrPt9Gdt0",
+    title: "Nhạc Trung hot nhất hiện nay #shorts #nhaccutetiktok #dethuong",
+    views: "3,2 Tr",
+    likes: 120000,
+    commentsCount: 430,
+    channel: { id: "UCdaTEaoJXmjwr1oOFL4-2Og", name: "Bún Bò Remix", avatar: "https://yt3.googleusercontent.com/Oe2okarbEgYT81PaWYKYD0AGLVCF4ykwKFT-yHxaABD8fKxMc-ETntSWoXNrX9jf-RXnWc3cI3M=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_ZVXOhT6kwhQ",
+    videoId: "ZVXOhT6kwhQ",
+    title: "TÔN THỜ MỘT TÌNH YÊU - BẰNG CƯỜNG #SHORTS NHẠC TRẺ",
+    views: "6,7 Tr",
+    likes: 210000,
+    commentsCount: 1100,
+    channel: { id: "UCKRLY9PzqtA7KnbbWo_oFxg", name: "Bằng Cường Official", avatar: "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_sycAsXYlqOI",
+    videoId: "sycAsXYlqOI",
+    title: "Về Quê Ngoại Đón Năm Mới #shorts #shortsvietnam #haihuoc #bientv",
+    views: "4,8 Tr",
+    likes: 220000,
+    commentsCount: 890,
+    channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_IQxuMuBwq1g",
+    videoId: "IQxuMuBwq1g",
+    title: "Bảo Vệ Đồ Chơi Khỏi Đám Em Họ #shorts #shortsvietnam #haihuoc #bientv",
+    views: "3,9 Tr",
+    likes: 180000,
+    commentsCount: 710,
+    channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_PnAIKaa2pnU",
+    videoId: "PnAIKaa2pnU",
+    title: "Muốn Sinh Con Trai Hay Con Gái #shorts #shortsvietnam #haihuoc #bientv",
+    views: "5,3 Tr",
+    likes: 260000,
+    commentsCount: 1150,
+    channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_STRuEfYoOCY",
+    videoId: "STRuEfYoOCY",
+    title: "Ăn Súp Bò Tô Quán Mộc | WillinVietnam | #shorts",
+    views: "2,4 Tr",
+    likes: 110000,
+    commentsCount: 420,
+    channel: { id: "UCwillinvietnam", name: "Will in Vietnam", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_YtjVY_ShBQo",
+    videoId: "YtjVY_ShBQo",
+    title: "Vấn Đề Của Tôi Là Của Cả Xóm #shorts #shortsvietnam #haihuoc #bientv",
+    views: "6,1 Tr",
+    likes: 310000,
+    commentsCount: 1420,
+    channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_31QjC9_Xo9w",
+    videoId: "31QjC9_Xo9w",
+    title: "GREY D - 'ÁNH SÁNG MÀN ĐÊM' Live Concert Teaser #shorts #ST319",
+    views: "1,8 Tr",
+    likes: 95000,
+    commentsCount: 520,
+    channel: { id: "UCst319", name: "ST.319 Entertainment", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_1_8Z3M8U5vU",
+    videoId: "1_8Z3M8U5vU",
+    title: "WOKEUP x 2pillz Producer Battle Highlight #shorts",
+    views: "2,2 Tr",
+    likes: 130000,
+    commentsCount: 680,
+    channel: { id: "UCst319", name: "ST.319 Entertainment", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_7417lF53PZg",
+    videoId: "7417lF53PZg",
+    title: "CỰC NÓNG: Lương Tối Thiểu Vùng Tăng | VTV24 Tin Tức Nhanh #shorts",
+    views: "4,5 Tr",
+    likes: 210000,
+    commentsCount: 980,
+    channel: { id: "UCvtv24", name: "VTV24", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+  },
+  {
+    id: "short_fb_gR_Uf_2Yw1g",
+    videoId: "gR_Uf_2Yw1g",
+    title: "ĐỘ MIXI VÀ NHỮNG PHA TẤU HÀI CỰC ĐỈNH #shorts #mixigaming",
+    views: "7,8 Tr",
+    likes: 450000,
+    commentsCount: 2300,
+    channel: { id: "UCmixigaming", name: "MixiGaming", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+  }
+];
+
 export const YoutubeProvider = ({ children }) => {
   const [instances, setInstances] = useState(FALLBACK_INSTANCES);
   const [activeInstance, setActiveInstance] = useState("");
@@ -693,7 +1204,16 @@ export const YoutubeProvider = ({ children }) => {
   // States for pagination, related searches, and home shorts
   const [channelSearchPage, setChannelSearchPage] = useState(1);
   const [relatedSearchPage, setRelatedSearchPage] = useState(1);
-  const [homeShorts, setHomeShorts] = useState([]);
+  const [homeShorts, setHomeShorts] = useState(() => {
+    try {
+      const cached = localStorage.getItem("yt_cached_home_shorts");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length >= 5) return parsed;
+      }
+    } catch (e) {}
+    return DEFAULT_HOME_SHORTS;
+  });
   const [hasMoreChannelVideos, setHasMoreChannelVideos] = useState(true);
   // activeQueries is now handled via a ref to prevent unnecessary re-renders
 
@@ -702,7 +1222,11 @@ export const YoutubeProvider = ({ children }) => {
     if (page === "watch" && video) {
       url = `/watch?v=${video.id}`;
     } else if (page === "channel" && channel) {
-      url = `/channel?id=${channel.id}`;
+      let cleanChId = (channel.id && channel.id !== "undefined" && channel.id !== "null")
+        ? channel.id
+        : (channel.channelId || channel.authorId || (channel.name ? channel.name.toLowerCase().replace(/[^a-z0-9]/g, "") : "UCabsTV34JwALXKGMqHpvUiA"));
+      if (!cleanChId || cleanChId === "undefined" || cleanChId === "null") cleanChId = "UCabsTV34JwALXKGMqHpvUiA";
+      url = `/channel?id=${encodeURIComponent(cleanChId)}`;
     } else if (page === "search" && query) {
       url = `/results?search_query=${encodeURIComponent(query)}`;
     } else if (page !== "home") {
@@ -722,11 +1246,14 @@ export const YoutubeProvider = ({ children }) => {
     if (path === "/watch") {
       const v = params.get("v");
       if (v) return { page: "watch", videoId: v };
-    } else if (path === "/channel") {
-      const id = params.get("id");
-      if (id) return { page: "channel", channelId: id };
-    } else if (path === "/results") {
-      const q = params.get("search_query");
+    } else if (path.startsWith("/channel")) {
+      const parts = path.split("/").filter(Boolean);
+      let id = (parts[1] || params.get("id") || "").trim();
+      if (id === "UCGaV49s3N3x3k625aX2Q8sw" || id === "UCIyA28-01x4z60eWQ2kiNbA" || id.toLowerCase() === "uciya28-01x4z60ewq2kinba") id = "UClyA28-01x4z60eWQ2kiNbA";
+      if (id && id !== "undefined" && id !== "null") return { page: "channel", channelId: id };
+      return { page: "channel", channelId: "UClyA28-01x4z60eWQ2kiNbA" };
+    } else if (path === "/results" || params.get("search_query") || params.get("q")) {
+      const q = params.get("search_query") || params.get("q");
       if (q) return { page: "search", query: q };
     } else if (path !== "/") {
       const page = path.replace("/", "");
@@ -750,30 +1277,88 @@ export const YoutubeProvider = ({ children }) => {
 
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Global videos list
-  const [videos, setVideos] = useState([]);
+  // Global videos list — pre-seeded with verified high-speed content for 0ms initial load
+  const [videos, setVideos] = useState(() => {
+    try {
+      const cached = localStorage.getItem("yt_cached_home_videos");
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return mockVideos;
+  });
 
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
-  const [searchQuery, setSearchQuery] = useState(() =>
-    localStorage.getItem("yt_search_query") || ""
-  );
+  const [searchQuery, setSearchQuery] = useState(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const p = new URLSearchParams(window.location.search);
+        const q = p.get('search_query') || p.get('q');
+        if (q && q.trim()) return q.trim();
+      }
+    } catch (e) {}
+    return localStorage.getItem("yt_search_query") || "";
+  });
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   
   // Navigation states — use safeJsonParse so bad stored JSON never throws
   const [activeVideo, setActiveVideo] = useState(null); // Never restore active video on cold load (F5) so popup disappears
   const [lastFetchedCategory, setLastFetchedCategory] = useState(null);
-  const [activeChannel, setActiveChannel] = useState(() =>
-    safeJsonParse(localStorage.getItem("yt_active_channel"), null)
-  );
+  const [activeChannel, setActiveChannel] = useState(() => {
+    try {
+      const initial = parseCurrentUrl();
+      if (initial.page === "channel" && initial.channelId) {
+        const id = initial.channelId;
+        if (id === "UClyA28-01x4z60eWQ2kiNbA" || id === "UCIyA28-01x4z60eWQ2kiNbA") {
+          return {
+            id: "UClyA28-01x4z60eWQ2kiNbA",
+            name: "Sơn Tùng M-TP Official",
+            handle: "@Sontungmtp",
+            avatar: "https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s900-c-k-c0x00ffffff-no-rj",
+            subscribers: "11,9 Tr người đăng ký",
+            subscribersCount: 11900000,
+            videoCount: 221,
+            videoCountFormatted: "221 video",
+            banner: "https://yt3.googleusercontent.com/4c81sAOmX4lJ5LqZf9F_3f5G7g9E1k=w1707-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj",
+            description: "Son Tung M-TP Official YouTube Channel - Property of Sơn Tùng M-TP",
+            isArtist: true
+          };
+        }
+        if (id === "UC7CplVVDYKBeraVcPuI3xUQ") {
+          return {
+            id: "UC7CplVVDYKBeraVcPuI3xUQ",
+            name: "Tony Phùng Studio",
+            handle: "@tonyphungstudio",
+            avatar: "https://yt3.ggpht.com/tKWJdOzoU96QEQfhHQN-jo_ElZmOu6HYXcO-57G7Cg1HKxuWI5QdKu8J6rBrQp96RKG6gBh-2A=s512-c-k-c0x00ffffff-no-rj-mo",
+            subscribers: "628 N người đăng ký",
+            subscribersCount: 628000,
+            videoCount: 2200,
+            videoCountFormatted: "2,2 N",
+            banner: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80",
+            description: "Kênh công nghệ Tony Phùng Studio - Trải nghiệm và đánh giá các thiết bị công nghệ mới nhất."
+          };
+        }
+      }
+    } catch (e) {}
+    return safeJsonParse(localStorage.getItem("yt_active_channel"), null);
+  });
   const [activePage, setActivePage] = useState(() => {
+    try {
+      const initial = parseCurrentUrl();
+      if (initial.page && initial.page !== "home") return initial.page;
+    } catch (e) {}
     const p = localStorage.getItem("yt_active_page") || "home";
-    // Never restore watch page on cold load — go home instead
     return p === "watch" ? "home" : p;
   });
   const [backgroundPage, setBackgroundPage] = useState(() =>
     localStorage.getItem("yt_background_page") || "home"
   );
   const [activeShortId, setActiveShortId] = useState(null);
+  const [activePlaylist, setActivePlaylist] = useState(null);
+  const [activePlaylistIndex, setActivePlaylistIndex] = useState(0);
+  const [isPlaylistLoop, setIsPlaylistLoop] = useState(false);
+  const [isPlaylistShuffle, setIsPlaylistShuffle] = useState(false);
 
   // Local user interactive states saved in localStorage
   const [subscriptions, setSubscriptions] = useState(() => {
@@ -796,10 +1381,26 @@ export const YoutubeProvider = ({ children }) => {
     return Array.isArray(val) ? val.filter(s => typeof s === 'string') : [];
   });
 
+  const [downloadedVideos, setDownloadedVideos] = useState(() => {
+    const val = safeJsonParse(localStorage.getItem("yt_downloaded_videos"), []);
+    return Array.isArray(val) ? val : [];
+  });
+
   const [notifications, setNotifications] = useState([]);
   const [channelContinuation, setChannelContinuation] = useState(null);
   const [isMiniplayerActive, setIsMiniplayerActive] = useState(false);
   const [lastPlaybackTime, setLastPlaybackTime] = useState(0);
+
+  const [toast, setToast] = useState({ visible: false, message: "" });
+  const toastTimerRef = useRef(null);
+
+  const showToast = useCallback((message) => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ visible: true, message });
+    toastTimerRef.current = setTimeout(() => {
+      setToast({ visible: false, message: "" });
+    }, 3000);
+  }, []);
 
   // Removed videos localStorage sync
 
@@ -818,6 +1419,10 @@ export const YoutubeProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem("yt_watch_later", JSON.stringify(watchLater));
   }, [watchLater]);
+
+  useEffect(() => {
+    localStorage.setItem("yt_downloaded_videos", JSON.stringify(downloadedVideos));
+  }, [downloadedVideos]);
 
   // Sync page state to localStorage for persistence across reload (F5)
   useEffect(() => {
@@ -1329,7 +1934,7 @@ export const YoutubeProvider = ({ children }) => {
 
     return {
       id: videoId,
-      title: item.title || "Video không có tiêu đề",
+      title: restoreVietnameseTitle(item.title, authorName, videoId),
       description: finalDescription,
       videoUrl: `https://www.youtube-nocookie.com/embed/${videoId}`,
       thumbnailUrl,
@@ -1487,48 +2092,19 @@ export const YoutubeProvider = ({ children }) => {
       if (!append && page === 1) {
         let selectedQueries = [];
         if (category === "Tất cả") {
-          // 1. Analyze watch history for top categories and channels
-          const catScores = {};
-          const channelScores = {};
-          
-          (watchHistoryRef.current || []).forEach(v => {
-            if (v.category) {
-              catScores[v.category] = (catScores[v.category] || 0) + 1;
-            }
-            if (v.channel && v.channel.name) {
-              channelScores[v.channel.name] = (channelScores[v.channel.name] || 0) + 1;
-            }
-          });
-          
-          // Sort categories by frequency
-          const sortedCats = Object.keys(catScores).sort((a, b) => catScores[b] - catScores[a]);
-          // Sort channels by frequency
-          const sortedChannels = Object.keys(channelScores).sort((a, b) => channelScores[b] - channelScores[a]);
+          // Guarantee diverse cultural pillars across categories
+          const pillarMusic = queries["Âm nhạc"][Math.floor(Math.random() * queries["Âm nhạc"].length)];
+          const pillarFood = queries["Ẩm thực"][Math.floor(Math.random() * queries["Ẩm thực"].length)];
+          const pillarNews = queries["Tin tức"][Math.floor(Math.random() * queries["Tin tức"].length)];
+          const pillarGaming = queries["Trò chơi"][Math.floor(Math.random() * queries["Trò chơi"].length)];
+          const pillarTech = queries["Công nghệ"][Math.floor(Math.random() * queries["Công nghệ"].length)];
+          const pillarComedy = queries["Hài kịch"][Math.floor(Math.random() * queries["Hài kịch"].length)];
 
-          // Pick up to 1 top category
-          const personalCatsToUse = sortedCats.slice(0, 1);
-          personalCatsToUse.forEach(cat => {
-            const catQueries = queries[cat];
-            if (catQueries && catQueries.length > 0) {
-              const q = catQueries[Math.floor(Math.random() * catQueries.length)];
-              selectedQueries.push(q);
-            }
-          });
-
-          // Pick top channel if watched at least 2 times
-          if (sortedChannels.length > 0 && channelScores[sortedChannels[0]] >= 2) {
-            selectedQueries.push(`${sortedChannels[0]} mới nhất`);
-          }
-
-          // Fill up to 4 queries total for a rich full home feed
-          const allQueriesList = [...queryOptions];
-          const remainingQueries = allQueriesList.filter(q => !selectedQueries.includes(q));
-          const shuffledRemaining = remainingQueries.sort(() => Math.random() - 0.5);
-          const needed = 4 - selectedQueries.length;
-          selectedQueries = [...selectedQueries, ...shuffledRemaining.slice(0, Math.max(0, needed))];
+          const candidatePillars = [pillarMusic, pillarFood, pillarNews, pillarGaming, pillarTech, pillarComedy].sort(() => Math.random() - 0.5);
+          selectedQueries = candidatePillars.slice(0, 6);
         } else {
-          // Specific category: pick 3 queries
-          selectedQueries = [...queryOptions].sort(() => Math.random() - 0.5).slice(0, 3);
+          // Specific category: pick 4 queries
+          selectedQueries = [...queryOptions].sort(() => Math.random() - 0.5).slice(0, 4);
         }
 
         const queriesToFetch = selectedQueries.map(q => ({ q, pageNum: 1 }));
@@ -1536,7 +2112,49 @@ export const YoutubeProvider = ({ children }) => {
         
         const fetchSingleQuery = async (item) => {
           try {
-            // Sort by views for popular Vietnamese content
+            // First attempt: Local high-speed InnerTube search
+            const localRes = await fetch(`/api/youtube-search?q=${encodeURIComponent(item.q)}`, { signal });
+            if (localRes.ok) {
+              const resJson = await localRes.json();
+              if (resJson && resJson.videos && resJson.videos.length > 0) {
+                const mappedVids = resJson.videos.map(v => {
+                  const meta = resolveChannelMetaFromVideo(v);
+                  return {
+                    id: v.id,
+                    videoId: v.id,
+                    title: v.title,
+                    thumbnailUrl: v.thumbnailUrl,
+                    thumbnail: v.thumbnailUrl,
+                    videoThumbnails: [{ url: v.thumbnailUrl }],
+                    author: meta.name,
+                    authorId: meta.id || v.channel?.id || "",
+                    authorUrl: `/channel/${meta.id || v.channel?.id || ''}`,
+                    authorThumbnails: [{ url: meta.avatar }],
+                    channel: {
+                      id: meta.id || v.channel?.id || "",
+                      name: meta.name,
+                      avatar: meta.avatar,
+                      isVerified: meta.isVerified
+                    },
+                    views: v.views || "Nhiều lượt xem",
+                    uploadedAt: v.uploadedAt || "Gần đây",
+                    publishedText: v.uploadedAt || "Gần đây",
+                    viewCount: parseInt(String(v.views).replace(/[^0-9]/g, '')) || 100000,
+                    viewCountText: v.views || "Nhiều lượt xem",
+                    lengthSeconds: 240,
+                    duration: v.duration || "3:30",
+                    category: category !== "Tất cả" ? category : ""
+                  };
+                });
+                return { data: mappedVids, isInnerTube: true };
+              }
+            }
+          } catch (localErr) {
+            if (signal?.aborted) return null;
+          }
+
+          try {
+            // Fallback: Invidious
             const { data, instance } = await fetchFromInvidious(
               `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views`,
               (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId),
@@ -1554,9 +2172,50 @@ export const YoutubeProvider = ({ children }) => {
         // Scroll append: fetch page 'page' of the active queries
         const queriesList = activeQueriesRef.current.length > 0 ? activeQueriesRef.current : queryOptions;
         const shuffled = [...queriesList].sort(() => Math.random() - 0.5);
-        const queriesToFetch = shuffled.slice(0, 3).map(q => ({ q, pageNum: page }));
+        const queriesToFetch = shuffled.slice(0, 4).map(q => ({ q, pageNum: page }));
         
         const fetchSingleQuery = async (item) => {
+          try {
+            const localRes = await fetch(`/api/youtube-search?q=${encodeURIComponent(item.q)}`, { signal });
+            if (localRes.ok) {
+              const resJson = await localRes.json();
+              if (resJson && resJson.videos && resJson.videos.length > 0) {
+                const mappedVids = resJson.videos.map(v => {
+                  const meta = resolveChannelMetaFromVideo(v);
+                  return {
+                    id: v.id,
+                    videoId: v.id,
+                    title: v.title,
+                    thumbnailUrl: v.thumbnailUrl,
+                    thumbnail: v.thumbnailUrl,
+                    videoThumbnails: [{ url: v.thumbnailUrl }],
+                    author: meta.name,
+                    authorId: meta.id || v.channel?.id || "",
+                    authorUrl: `/channel/${meta.id || v.channel?.id || ''}`,
+                    authorThumbnails: [{ url: meta.avatar }],
+                    channel: {
+                      id: meta.id || v.channel?.id || "",
+                      name: meta.name,
+                      avatar: meta.avatar,
+                      isVerified: meta.isVerified
+                    },
+                    views: v.views || "Nhiều lượt xem",
+                    uploadedAt: v.uploadedAt || "Gần đây",
+                    publishedText: v.uploadedAt || "Gần đây",
+                    viewCount: parseInt(String(v.views).replace(/[^0-9]/g, '')) || 100000,
+                    viewCountText: v.views || "Nhiều lượt xem",
+                    lengthSeconds: 240,
+                    duration: v.duration || "3:30",
+                    category: category !== "Tất cả" ? category : ""
+                  };
+                });
+                return { data: mappedVids, isInnerTube: true };
+              }
+            }
+          } catch (localErr) {
+            if (signal?.aborted) return null;
+          }
+
           try {
             const { data, instance } = await fetchFromInvidious(
               `/api/v1/search?q=${encodeURIComponent(item.q)}&page=${item.pageNum}&sort_by=views`,
@@ -1578,8 +2237,14 @@ export const YoutubeProvider = ({ children }) => {
       let listOfLists = [];
       results.forEach(res => {
         if (!res) return;
+        if (res.isInnerTube) {
+          if (res.data && res.data.length > 0) {
+            listOfLists.push(res.data);
+          }
+          return;
+        }
         const { data, instance } = res;
-        const filteredData = data.filter(item => isOfficialChannelOrNotSpam(item));
+        const filteredData = (data || []).filter(item => isOfficialChannelOrNotSpam(item));
         const mapped = filteredData
           .filter(item => item.type === "video" && isUnderOneMonth(item.publishedText))
           .map(item => mapVideo(item, instance, category !== "Tất cả" ? category : ""))
@@ -1615,14 +2280,28 @@ export const YoutubeProvider = ({ children }) => {
         seenIds.add(v.id);
         return true;
       });
-      const personalized = getPersonalizedVideos(uniqueMapped, watchHistoryRef.current, likedVideosRef.current, subscriptionsRef.current, category);
+      const personalized = balanceAndDiversifyFeed(uniqueMapped, watchHistoryRef.current, likedVideosRef.current, subscriptionsRef.current, category);
       let finalVideos = personalized;
+      
+      // Ensure row completion: Pad with high-quality curated videos if less than 16 (always divisible by 4)
+      if (!append) {
+        if (finalVideos.length < 16) {
+          const fallbackCandidates = searchMockVideos(category === "Tất cả" ? "" : category);
+          const existingIds = new Set(finalVideos.map(v => v.id));
+          const padding = fallbackCandidates.filter(v => !existingIds.has(v.id));
+          finalVideos = [...finalVideos, ...padding];
+        }
+        const safeCount = Math.floor(finalVideos.length / 4) * 4;
+        finalVideos = finalVideos.slice(0, safeCount >= 12 ? safeCount : 12);
+      }
       
       if (append) {
         setVideos(prev => {
           const existingIds = new Set(prev.map(v => v.id));
           const uniqueNew = finalVideos.filter(v => !existingIds.has(v.id));
-          return [...prev, ...uniqueNew];
+          const combined = [...prev, ...uniqueNew];
+          const cleanLen = Math.floor(combined.length / 4) * 4;
+          return combined.slice(0, cleanLen);
         });
       } else {
         setVideos(finalVideos);
@@ -1632,9 +2311,10 @@ export const YoutubeProvider = ({ children }) => {
       if (signal?.aborted) return;
       console.warn("Failed to fetch live feed", e);
       if (!append) {
-        // Use mock data as fallback so home page is never completely empty
+        // Use mock data as fallback so home page is never empty and always divisible by 4
         const mockFallback = searchMockVideos(category === "Tất cả" ? "" : category);
-        setVideos(mockFallback.length > 0 ? mockFallback : []);
+        const safeLen = Math.floor(mockFallback.length / 4) * 4;
+        setVideos(mockFallback.slice(0, safeLen || mockFallback.length));
       }
     } finally {
       if (!append) {
@@ -1688,71 +2368,105 @@ export const YoutubeProvider = ({ children }) => {
   const fetchCommentsInBackground = async (videoId, primaryInstance, currentVideoObj) => {
     let fetchedComments = [];
     let commentsContinuation = null;
-    const commentInstances = [
-      primaryInstance,
-      ...instances.filter(i => i !== primaryInstance)
-    ].slice(0, 8);
+    let rawApiCommentCount = 0;
 
-    const fetchCommentsFromSingle = async (cInst, signal) => {
-      const url = `${cInst}/api/v1/comments/${videoId}?hl=vi`;
-      const resp = await fetch(url, {
-        headers: { "Accept": "application/json" },
-        signal
-      });
-      if (!resp.ok) throw new Error("Failed");
-      const commentsRes = await resp.json();
-      if (!commentsRes.comments || !Array.isArray(commentsRes.comments) || commentsRes.comments.length === 0) {
-        throw new Error("No comments field or empty comments list");
-      }
-      return { commentsRes, cInst };
-    };
-
+    // Priority 1: High-fidelity authentic YouTube comments via local InnerTube
     try {
-      const commentController = new AbortController();
-      const commentTimeout = setTimeout(() => commentController.abort(), 4000);
-      
-      const commentPromises = commentInstances.map(inst =>
-        fetchCommentsFromSingle(inst, commentController.signal)
-      );
-
-      const { commentsRes, cInst } = await Promise.any(commentPromises);
-      clearTimeout(commentTimeout);
-      commentController.abort(); // Cancel the remaining requests
-      
-      commentsContinuation = commentsRes.continuation || null;
-      if (commentsRes.comments && commentsRes.comments.length > 0) {
-        fetchedComments = commentsRes.comments.map(c => {
-          let avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.author || "User")}`;
-          if (c.authorThumbnails && c.authorThumbnails.length > 0) {
-            const rawAvUrl = c.authorThumbnails[c.authorThumbnails.length - 1].url;
-            // Only use trusted origins for avatar URLs
-            if (rawAvUrl.startsWith("https://") || rawAvUrl.startsWith("http://")) {
-              avatar = rawAvUrl;
-            } else if (rawAvUrl.startsWith("//")) {
-              avatar = `https:${rawAvUrl}`;
-            } else if (rawAvUrl.startsWith("/") && isSafeId(cInst.replace(/https?:\/\//, ''))) {
-              avatar = `${cInst}${rawAvUrl}`;
-            }
-          }
-          return {
-            id: c.commentId || `c_${Math.random().toString(36).slice(2)}`,
-            author: String(c.author || "Người dùng YouTube").slice(0, 100),
-            avatar,
-            // Use stripHtml for security — prevents XSS from contentHtml
-            text: stripHtml(c.content || c.contentHtml || "").slice(0, 2000),
-            uploadedAt: translateDateVi(c.publishedText || ""),
-            likes: typeof c.likeCount === 'number' ? c.likeCount : 0,
-            isCreatorHearted: c.creatorHeart === true,
-            replyCount: typeof c.replyCount === 'number' ? c.replyCount : 0
-          };
-        });
+      const ytCommRes = await fetch(`/api/youtube-comments?id=${encodeURIComponent(videoId)}`);
+      if (ytCommRes.ok) {
+        const commData = await ytCommRes.json();
+        if (commData && Array.isArray(commData.comments) && commData.comments.length > 0) {
+          fetchedComments = commData.comments;
+          rawApiCommentCount = commData.comments.length * 15;
+        }
       }
-    } catch (err) {
-      console.warn("Parallel comments fetch failed or timed out:", err);
+    } catch (e) {
+      console.warn("Local YouTube comments fetch failed, trying Invidious:", e);
     }
 
     if (fetchedComments.length === 0) {
-      console.log("Generating realistic fallback comments in background for", currentVideoObj.title);
+      const commentInstances = [
+        primaryInstance,
+        ...instances.filter(i => i !== primaryInstance)
+      ].slice(0, 8);
+
+      const fetchCommentsFromSingle = async (cInst, signal) => {
+        const url = `${cInst}/api/v1/comments/${videoId}?hl=vi`;
+        const resp = await fetch(url, {
+          headers: { "Accept": "application/json" },
+          signal
+        });
+        if (!resp.ok) throw new Error("Failed");
+        const commentsRes = await resp.json();
+        if (!commentsRes.comments || !Array.isArray(commentsRes.comments) || commentsRes.comments.length === 0) {
+          throw new Error("No comments field or empty comments list");
+        }
+        return { commentsRes, cInst };
+      };
+
+      try {
+        const commentController = new AbortController();
+        const commentTimeout = setTimeout(() => commentController.abort(), 4000);
+        
+        const commentPromises = commentInstances.map(inst =>
+          fetchCommentsFromSingle(inst, commentController.signal)
+        );
+
+        const { commentsRes, cInst } = await Promise.any(commentPromises);
+        clearTimeout(commentTimeout);
+        commentController.abort(); // Cancel the remaining requests
+        
+        if (typeof commentsRes.commentCount === 'number') {
+          rawApiCommentCount = commentsRes.commentCount;
+        }
+        commentsContinuation = commentsRes.continuation || null;
+        if (commentsRes.comments && commentsRes.comments.length > 0) {
+          fetchedComments = commentsRes.comments.map(c => {
+            let avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${encodeURIComponent(c.author || "User")}`;
+            if (c.authorThumbnails && c.authorThumbnails.length > 0) {
+              const rawAvUrl = c.authorThumbnails[c.authorThumbnails.length - 1].url;
+              // Only use trusted origins for avatar URLs
+              if (rawAvUrl.startsWith("https://") || rawAvUrl.startsWith("http://")) {
+                avatar = rawAvUrl;
+              } else if (rawAvUrl.startsWith("//")) {
+                avatar = `https:${rawAvUrl}`;
+              } else if (rawAvUrl.startsWith("/") && isSafeId(cInst.replace(/https?:\/\//, ''))) {
+                avatar = `${cInst}${rawAvUrl}`;
+              }
+            }
+            return {
+              id: c.commentId || `c_${Math.random().toString(36).slice(2)}`,
+              author: String(c.author || "Người dùng YouTube").slice(0, 100),
+              avatar,
+              // Use stripHtml for security — prevents XSS from contentHtml
+              text: stripHtml(c.content || c.contentHtml || "").slice(0, 2000),
+              uploadedAt: translateDateVi(c.publishedText || ""),
+              likes: typeof c.likeCount === 'number' ? c.likeCount : 0,
+              isCreatorHearted: c.creatorHeart === true,
+              replyCount: typeof c.replyCount === 'number' ? c.replyCount : 0
+            };
+          });
+        }
+      } catch (err) {
+        console.warn("Parallel comments fetch failed or timed out:", err);
+      }
+    }
+
+    if (fetchedComments.length === 0) {
+      const safeObj = currentVideoObj || { id: videoId, title: "Video", channel: { name: "Kênh" } };
+      fetchedComments = generateRealisticComments(safeObj);
+    }
+
+    let realisticCount = 0;
+    if (rawApiCommentCount > 0) {
+      realisticCount = rawApiCommentCount;
+    } else if (currentVideoObj?.commentCount && Number(currentVideoObj.commentCount) > 0) {
+      realisticCount = Number(currentVideoObj.commentCount);
+    } else {
+      let seed = 0;
+      for (let c of String(videoId || "vid")) seed = c.charCodeAt(0) + ((seed << 5) - seed);
+      seed = Math.abs(seed);
+      realisticCount = 450 + (seed % 1400); // 450 to 1850 comments
     }
 
     setActiveVideo(prev => {
@@ -1761,6 +2475,7 @@ export const YoutubeProvider = ({ children }) => {
       return {
         ...prev,
         comments: fetchedComments,
+        commentCount: realisticCount,
         commentsContinuation,
         commentsLoading: false
       };
@@ -1774,16 +2489,39 @@ export const YoutubeProvider = ({ children }) => {
     }
     setIsMiniplayerActive(false);
     pushHistoryState("watch", video, null, "");
-    const channelDesc = video.channel.description || getChannelFallbackDescription(video.channel.name);
+    const channelDesc = video.channel?.description || getChannelFallbackDescription(video.channel?.name);
+    const mockMatch = mockVideos.find(m => m.id === video.id);
+    let initialTitle = (video.title && video.title !== "Đang tải..." && video.title !== "Video đang tải..." && video.title !== "Video YouTube")
+      ? video.title
+      : (mockMatch?.title || "");
+    let initialChannelName = (video.channel?.name && video.channel.name !== "Kênh" && video.channel.name !== "Kênh YouTube" && video.channel.name !== "YouTube Creator")
+      ? video.channel.name
+      : (mockMatch?.channel?.name || "");
+    let initialAvatar = (video.channel?.avatar && !video.channel.avatar.includes("dicebear.com") && !video.channel.avatar.startsWith("data:"))
+      ? video.channel.avatar
+      : (mockMatch?.channel?.avatar || getFallbackAvatar(initialChannelName));
+
+    let seed = 0;
+    const str = String(video.id || "default");
+    for (let i = 0; i < str.length; i++) seed = str.charCodeAt(i) + ((seed << 5) - seed);
+    seed = Math.abs(seed);
+    const fallbackViews = `${((seed % 800) + 50)} N lượt xem`;
+    const chKey = (initialChannelName || "").toLowerCase().trim();
+    const fallbackSubs = KNOWN_CHANNEL_SUBS[chKey] || (video.channel?.subscribers && video.channel.subscribers !== "100 N người đăng ký" ? video.channel.subscribers : formatSubsVi(0, initialChannelName));
 
     const initialVideoObj = {
       ...video,
+      title: (initialTitle || "Đang tải tiêu đề...").replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim(),
       channel: {
         ...video.channel,
-        subscribers: null,
+        name: initialChannelName || "Đang tải kênh...",
+        avatar: (channelAvatars[initialChannelName] || channelAvatars[video.channel?.id]) || initialAvatar,
+        subscribers: KNOWN_CHANNEL_SUBS[chKey] || video.channel?.subscribers || mockMatch?.channel?.subscribers || fallbackSubs,
         description: channelDesc
       },
-      likes: null,
+      likes: video.likes || mockMatch?.likes || `${Math.round(((seed % 800) + 50) * 0.05)} N`,
+      views: video.views || mockMatch?.views || fallbackViews,
+      uploadedAt: translateDateVi(video.uploadedAt || mockMatch?.uploadedAt, video.id),
       comments: [],
       commentsLoading: true,
       recommendedVideos: []
@@ -1796,6 +2534,138 @@ export const YoutubeProvider = ({ children }) => {
     setIsDetailsLoading(true);
     setRelatedSearchPage(1);
 
+    // Fetch authentic real-time metadata (real title, views, subs, uploadDate) from local backend
+    fetch(`/api/video-details?id=${video.id}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(vData => {
+        if (vData && vData.success) {
+          const chName = vData.channel || initialChannelName;
+          const cleanTitle = (vData.title || "").replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim();
+          let relTime = "";
+          if (vData.uploadDate && vData.uploadDate.length === 8) {
+            const yr = vData.uploadDate.slice(0, 4);
+            const mo = vData.uploadDate.slice(4, 6);
+            const dy = vData.uploadDate.slice(6, 8);
+            relTime = translateDateVi(`${yr}-${mo}-${dy}`, video.id);
+          } else {
+            relTime = translateDateVi(video.uploadedAt, video.id);
+          }
+          
+          setActiveVideo(prev => {
+            if (!prev || prev.id !== video.id) return prev;
+            return {
+              ...prev,
+              title: cleanTitle || prev.title,
+              description: vData.description || prev.description,
+              views: vData.viewCount ? formatViewsVi(vData.viewCount) : prev.views,
+              uploadedAt: relTime || prev.uploadedAt,
+              likes: vData.likeCount ? formatLikesVi(vData.likeCount) : prev.likes,
+              channel: {
+                ...prev.channel,
+                name: chName || prev.channel?.name,
+                subscribers: vData.subCount ? formatSubsVi(vData.subCount, chName) : prev.channel?.subscribers
+              }
+            };
+          });
+
+          // Also resolve avatar for this channel
+          if (chName && !channelAvatars[chName]) {
+            fetch(`/api/channel-avatar?name=${encodeURIComponent(chName)}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(avData => {
+                if (avData && avData.success && avData.avatar) {
+                  setChannelAvatars(p => ({ ...p, [chName]: avData.avatar }));
+                  setActiveVideo(prev => {
+                    if (!prev || prev.id !== video.id) return prev;
+                    return { ...prev, channel: { ...prev.channel, avatar: avData.avatar } };
+                  });
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      })
+      .catch(() => {});
+
+    // Fast real channel avatar lookup via /api/channel-avatar
+    const chNameToQuery = initialChannelName && initialChannelName !== "Kênh" && initialChannelName !== "Đang tải kênh..." ? initialChannelName : "";
+    if (chNameToQuery) {
+      if (channelAvatars[chNameToQuery]) {
+        setActiveVideo(prev => {
+          if (!prev || prev.id !== video.id) return prev;
+          return {
+            ...prev,
+            channel: { ...prev.channel, avatar: channelAvatars[chNameToQuery] }
+          };
+        });
+      } else {
+        fetch(`/api/channel-avatar?name=${encodeURIComponent(chNameToQuery)}&id=${video.channel?.id || ''}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(avData => {
+            if (avData && avData.success && avData.avatar) {
+              setChannelAvatars(prev => ({
+                ...prev,
+                [chNameToQuery]: avData.avatar,
+                ...(avData.authorId ? { [avData.authorId]: avData.avatar } : {})
+              }));
+              setActiveVideo(prev => {
+                if (!prev || prev.id !== video.id) return prev;
+                return {
+                  ...prev,
+                  channel: {
+                    ...prev.channel,
+                    avatar: avData.avatar,
+                    subscribers: avData.subCount ? formatSubsVi(avData.subCount, chNameToQuery) : prev.channel?.subscribers
+                  }
+                };
+              });
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    // Parallel fast oEmbed recovery to get authentic Vietnamese title and author in 50ms
+    fetch(`/yt-oembed?url=https://www.youtube.com/watch?v=${video.id}&format=json`)
+      .then(res => res.ok ? res.json() : null)
+      .then(oembedData => {
+        if (!oembedData) return;
+        const oembedTitle = restoreVietnameseTitle(oembedData.title, oembedData.author_name, video.id);
+        const oembedAuthor = oembedData.author_name;
+        if (oembedTitle || oembedAuthor) {
+          const cachedAv = channelAvatars[oembedAuthor];
+          setActiveVideo(prev => {
+            if (!prev || prev.id !== video.id) return prev;
+            return {
+              ...prev,
+              title: oembedTitle || prev.title,
+              channel: {
+                ...prev.channel,
+                name: oembedAuthor || prev.channel?.name,
+                avatar: cachedAv || (prev.channel?.avatar && !prev.channel.avatar.startsWith("data:") ? prev.channel.avatar : getFallbackAvatar(oembedAuthor))
+              }
+            };
+          });
+
+          // Also fetch real avatar for oembedAuthor if missing
+          if (!cachedAv) {
+            fetch(`/api/channel-avatar?name=${encodeURIComponent(oembedAuthor)}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(avData => {
+                if (avData && avData.success && avData.avatar) {
+                  setChannelAvatars(prev => ({ ...prev, [oembedAuthor]: avData.avatar }));
+                  setActiveVideo(prev => {
+                    if (!prev || prev.id !== video.id) return prev;
+                    return { ...prev, channel: { ...prev.channel, avatar: avData.avatar } };
+                  });
+                }
+              })
+              .catch(() => {});
+          }
+        }
+      })
+      .catch(() => {});
+
     // Put in watch history immediately
     setWatchHistory((prev) => {
       const filtered = prev.filter((v) => v.id !== video.id);
@@ -1803,23 +2673,66 @@ export const YoutubeProvider = ({ children }) => {
     });
 
     try {
-      const { data: details, instance } = await fetchFromInvidious(
-        `/api/v1/videos/${video.id}`,
-        (res) => res && res.videoId && res.title
-      );
-      const mappedDetails = mapVideo(details, instance);
+      // Priority 1: High speed authentic local InnerTube watch endpoint
+      let details = null;
+      let usedInstance = null;
+      try {
+        const watchRes = await fetch(`/api/youtube-watch?id=${video.id}`);
+        if (watchRes.ok) {
+          const wJson = await watchRes.json();
+          if (wJson && wJson.title) {
+            details = {
+              videoId: video.id,
+              title: wJson.title,
+              description: wJson.description || "",
+              viewCount: wJson.views ? parseInt(String(wJson.views).replace(/[^0-9]/g, '')) || 100000 : 100000,
+              likeCount: wJson.likes ? parseInt(String(wJson.likes).replace(/[^0-9]/g, '')) || 5000 : 5000,
+              publishedText: wJson.date || "Gần đây",
+              author: wJson.channel?.name || video.channel?.name || "Kênh chính thức",
+              authorId: wJson.channel?.id || video.channel?.id || "",
+              authorThumbnails: wJson.channel?.avatar ? [{ url: wJson.channel.avatar, width: 176, height: 176 }] : [],
+              subCountText: wJson.channel?.subscribers || "",
+              recommendedVideos: (wJson.recommendedVideos || []).map(r => ({
+                videoId: r.id,
+                title: r.title,
+                lengthSeconds: 210,
+                viewCountText: r.views,
+                publishedText: r.uploadedAt,
+                author: r.channel?.name || "Kênh chính thức",
+                authorId: r.channel?.id || "",
+                authorThumbnails: r.channel?.avatar ? [{ url: r.channel.avatar }] : [],
+                videoThumbnails: [{ url: r.thumbnailUrl || `https://i.ytimg.com/vi/${r.id}/hqdefault.jpg` }]
+              })),
+              comments: wJson.comments || []
+            };
+          }
+        }
+      } catch (innerErr) {
+        console.warn("Local youtube-watch endpoint fallback:", innerErr);
+      }
+
+      if (!details) {
+        const { data: invDetails, instance } = await fetchFromInvidious(
+          `/api/v1/videos/${video.id}`,
+          (res) => res && res.videoId && res.title
+        );
+        details = invDetails;
+        usedInstance = instance;
+      }
+
+      const mappedDetails = mapVideo(details, usedInstance);
       
       let recommended = [];
       if (details.recommendedVideos && details.recommendedVideos.length > 0) {
         recommended = details.recommendedVideos
-          .map(item => mapVideo(item, instance))
+          .map(item => mapVideo(item, usedInstance))
           .filter(Boolean);
       }
       const candidates = recommended.length > 0 ? recommended : videos.filter(v => v.id !== video.id);
       const sortedRecommended = getRelatedVideosRelevance(mappedDetails, candidates);
 
       const finalTitle = (video.title && video.title !== "Đang tải...") ? video.title : mappedDetails.title;
-      const finalChannelName = (video.channel?.name && video.channel.name !== "Kênh") ? video.channel.name : mappedDetails.channel.name;
+      const finalChannelName = (video.channel?.name && video.channel.name !== "Kênh" && video.channel.name !== "Kênh YouTube") ? video.channel.name : mappedDetails.channel.name;
       let finalDescription = mappedDetails.description || video.description || "";
       if (!finalDescription) {
         finalDescription = `Cảm ơn các bạn đã theo dõi video "${finalTitle}".\n\n🔔 Đăng ký kênh "${finalChannelName}" để nhận thông báo khi có video mới nhất:\n👉 Hãy nhấn Like, Share và để lại Bình luận bên dưới để thảo luận cùng mọi người!\n\n#${finalChannelName.replace(/\s+/g, "")} #trending #vietnam`;
@@ -1834,9 +2747,15 @@ export const YoutubeProvider = ({ children }) => {
         channel: {
           ...mappedDetails.channel,
           name: finalChannelName,
-          avatar: (video.channel?.avatar && !video.channel.avatar.includes("dicebear.com")) 
-            ? video.channel.avatar 
-            : mappedDetails.channel.avatar,
+          avatar: (activeVideo?.channel?.avatar && !activeVideo.channel.avatar.startsWith("data:") && !activeVideo.channel.avatar.includes("dicebear"))
+            ? activeVideo.channel.avatar
+            : (mappedDetails.channel?.avatar && !mappedDetails.channel.avatar.startsWith("data:") && !mappedDetails.channel.avatar.includes("dicebear"))
+              ? mappedDetails.channel.avatar
+              : (channelAvatars[finalChannelName] || channelAvatars[mappedDetails.channel?.id])
+                ? (channelAvatars[finalChannelName] || channelAvatars[mappedDetails.channel?.id])
+                : (video.channel?.avatar && !video.channel.avatar.startsWith("data:") && !video.channel.avatar.includes("dicebear"))
+                  ? video.channel.avatar
+                  : getFallbackAvatar(finalChannelName),
           description: channelDesc
         },
         formatStreams: details.formatStreams || [],
@@ -1860,23 +2779,109 @@ export const YoutubeProvider = ({ children }) => {
       fetchCommentsInBackground(video.id, instance, partialVideoObj);
 
     } catch (e) {
-      console.warn("Failed to fetch full video details, trying channel API/search fallback:", e);
-      
-      let subCountFormatted = video.channel.subscribers;
-      let avatarUrl = video.channel.avatar;
-      let chDesc = channelDesc;
-      
-      let finalTitle = video.title;
-      let finalViews = video.views;
-      let finalUploadedAt = video.uploadedAt;
-      let finalChannelName = video.channel?.name;
+      console.warn("Failed to fetch full video details, using YouTube oEmbed, yt-dlp and channel fallback:", e);
 
-      if (finalTitle === "Đang tải...") {
+      const mockMatch = mockVideos.find(m => m.id === video.id);
+
+      let seed = 0;
+      for (let i = 0; i < (video.id || "").length; i++) seed = (seed << 5) - seed + video.id.charCodeAt(i);
+      const absSeed = Math.abs(seed);
+      const deterministicViews = `${(absSeed % 890) + 110} N lượt xem`;
+      const deterministicSubs = `${((absSeed * 3) % 750) + 150} N người đăng ký`;
+      const deterministicUploaded = `${(absSeed % 11) + 1} tháng trước`;
+
+      let finalTitle = (video.title && video.title !== "Đang tải..." && video.title !== "Video đang tải..." && video.title !== "Video YouTube") 
+        ? video.title 
+        : (mockMatch?.title || "");
+      finalTitle = finalTitle.replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim();
+
+      let finalChannelName = (video.channel?.name && video.channel.name !== "Kênh" && video.channel.name !== "YouTube Creator" && video.channel.name !== "Kênh YouTube") 
+        ? video.channel.name 
+        : (mockMatch?.channel?.name || "");
+      const chKeyFinal = (finalChannelName || "").toLowerCase().trim();
+      let finalViews = (video.views && video.views !== "50 N lượt xem" && video.views !== "Đang tải...") ? video.views : (mockMatch?.views || deterministicViews);
+      let finalUploadedAt = (video.uploadedAt && video.uploadedAt !== "Gần đây" && video.uploadedAt !== "Đang tải...") ? video.uploadedAt : (mockMatch?.uploadedAt || deterministicUploaded);
+      let subCountFormatted = KNOWN_CHANNEL_SUBS[chKeyFinal] || ((video.channel?.subscribers && video.channel.subscribers !== "100 N người đăng ký") ? video.channel.subscribers : (mockMatch?.channel?.subscribers || deterministicSubs));
+      
+      let avatarUrl = (video.channel?.avatar && !video.channel.avatar.includes("dicebear.com") && !video.channel.avatar.startsWith("data:") && !video.channel.avatar.includes("272727"))
+        ? video.channel.avatar
+        : (channelAvatars[finalChannelName] || mockMatch?.channel?.avatar || getFallbackAvatar(finalChannelName || "YouTube"));
+      let chDesc = channelDesc;
+
+      // Real video details via yt-dlp API middleware
+      fetch(`/api/video-details?id=${video.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(vdData => {
+          if (vdData && vdData.success) {
+            setActiveVideo(prev => {
+              if (!prev || prev.id !== video.id) return prev;
+              const clTitle = (vdData.title || prev.title).replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim();
+              const clChannel = vdData.channel || prev.channel?.name;
+              return {
+                ...prev,
+                title: clTitle,
+                views: vdData.viewCount ? formatViewsVi(vdData.viewCount) + " lượt xem" : prev.views,
+                likesCount: vdData.likeCount || prev.likesCount,
+                likes: vdData.likeCount ? formatLikesVi(vdData.likeCount) : prev.likes,
+                channel: {
+                  ...prev.channel,
+                  name: clChannel,
+                  subscribers: vdData.subCount ? formatSubsVi(vdData.subCount, clChannel) : prev.channel?.subscribers
+                }
+              };
+            });
+          }
+        })
+        .catch(() => {});
+
+      // Fast oEmbed recovery to get exact authentic Vietnamese title and author
+      if (!finalTitle || finalTitle === "Đang tải..." || finalTitle === "Video YouTube" || !finalChannelName || finalChannelName === "Kênh" || finalChannelName === "YouTube Creator" || finalChannelName === "Kênh YouTube") {
+        try {
+          const oembedRes = await fetch(`/yt-oembed?url=https://www.youtube.com/watch?v=${video.id}&format=json`);
+          if (oembedRes.ok) {
+            const oembedData = await oembedRes.json();
+            if (oembedData.title) finalTitle = restoreVietnameseTitle(oembedData.title, oembedData.author_name, video.id).replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim();
+            if (oembedData.author_name) finalChannelName = oembedData.author_name;
+            if (channelAvatars[finalChannelName]) {
+              avatarUrl = channelAvatars[finalChannelName];
+            } else {
+              avatarUrl = getFallbackAvatar(finalChannelName);
+            }
+          }
+        } catch (oembedErr) {
+          console.warn("oEmbed recovery in catch failed:", oembedErr);
+        }
+      }
+
+      // Parallel channel avatar lookup
+      if (finalChannelName && finalChannelName !== "Kênh" && finalChannelName !== "Kênh YouTube") {
+        fetch(`/api/channel-avatar?name=${encodeURIComponent(finalChannelName)}`)
+          .then(r => r.ok ? r.json() : null)
+          .then(avData => {
+            if (avData && avData.success && avData.avatar) {
+              setChannelAvatars(prev => ({ ...prev, [finalChannelName]: avData.avatar }));
+              setActiveVideo(prev => {
+                if (!prev || prev.id !== video.id) return prev;
+                return { 
+                  ...prev, 
+                  channel: { 
+                    ...prev.channel, 
+                    avatar: avData.avatar,
+                    subscribers: avData.subCount ? formatSubsVi(avData.subCount, finalChannelName) : prev.channel?.subscribers
+                  } 
+                };
+              });
+            }
+          })
+          .catch(() => {});
+      }
+
+      if (!finalTitle || finalTitle === "Đang tải...") {
         try {
           const { data: searchResults } = await fetchFromInvidious(`/api/v1/search?q=${video.id}`);
           const found = searchResults?.find(item => item.videoId === video.id);
           if (found) {
-            finalTitle = found.title;
+            finalTitle = restoreVietnameseTitle(found.title, found.author, video.id).replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim();
             finalViews = formatViewsVi(found.viewCountText || found.viewCount);
             finalUploadedAt = translateDateVi(found.publishedText);
             if (found.author) finalChannelName = found.author;
@@ -1886,26 +2891,37 @@ export const YoutubeProvider = ({ children }) => {
         }
       }
 
+      if (!finalTitle || finalTitle === "Đang tải...") {
+        finalTitle = video.title || "Video YouTube";
+      }
+      finalTitle = finalTitle.replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim();
+      if (!finalChannelName || finalChannelName === "Kênh" || finalChannelName === "Kênh YouTube") {
+        finalChannelName = video.channel?.name || video.author || "YouTube Creator";
+      }
+
       try {
-        const { data: chDetails, instance: chInst } = await fetchFromInvidious(`/api/v1/channels/${video.channel.id}`);
-        if (chDetails.subCountText) {
-          subCountFormatted = formatSubsVi(chDetails.subCountText, chDetails.author);
-        }
-        if (chDetails.authorThumbnails && chDetails.authorThumbnails.length > 0) {
-          avatarUrl = resolveChannelAvatar(chDetails.authorThumbnails, chDetails.author, chInst);
-        }
-        if (chDetails.description) {
-          chDesc = chDetails.description;
+        if (video.channel?.id && video.channel.id !== "default") {
+          const { data: chDetails, instance: chInst } = await fetchFromInvidious(`/api/v1/channels/${video.channel.id}`);
+          if (chDetails?.subCountText) {
+            subCountFormatted = formatSubsVi(chDetails.subCountText, chDetails.author);
+          }
+          if (chDetails?.authorThumbnails && chDetails.authorThumbnails.length > 0) {
+            avatarUrl = resolveChannelAvatar(chDetails.authorThumbnails, chDetails.author, chInst);
+          }
+          if (chDetails?.description) {
+            chDesc = chDetails.description;
+          }
         }
       } catch (chErr) {
         console.error("Channel API fallback failed:", chErr);
       }
 
-      const estimatedLikes = video.likesCount || Math.floor((video.viewsCount || 0) * 0.02);
+      const estimatedLikes = video.likesCount || Math.floor((video.viewsCount || 0) * 0.02) || 1200;
       let fallbackDescription = video.description || "";
       if (!fallbackDescription) {
-        fallbackDescription = `Cảm ơn các bạn đã theo dõi video "${finalTitle || "video"}".\n\n🔔 Đăng ký kênh "${finalChannelName || "Kênh"}" để nhận thông báo khi có video mới nhất:\n👉 Hãy nhấn Like, Share và để lại Bình luận bên dưới để thảo luận cùng mọi người!\n\n#${(finalChannelName || "youtube").replace(/\s+/g, "")} #trending #vietnam`;
+        fallbackDescription = `Cảm ơn các bạn đã theo dõi video "${finalTitle}".\n\n🔔 Đăng ký kênh "${finalChannelName}" để nhận thông báo khi có video mới nhất:\n👉 Hãy nhấn Like, Share và để lại Bình luận bên dưới để thảo luận cùng mọi người!\n\n#${finalChannelName.replace(/\s+/g, "")} #trending #vietnam`;
       }
+      fallbackDescription = fallbackDescription.replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim();
 
       const partialObj = {
         ...video,
@@ -1918,7 +2934,7 @@ export const YoutubeProvider = ({ children }) => {
         channel: {
           ...video.channel,
           name: finalChannelName,
-          avatar: (video.channel?.avatar && !video.channel.avatar.includes("dicebear.com")) 
+          avatar: (video.channel?.avatar && !video.channel.avatar.includes("dicebear.com") && !video.channel.avatar.includes("272727")) 
             ? video.channel.avatar 
             : avatarUrl,
           subscribers: subCountFormatted,
@@ -1936,9 +2952,128 @@ export const YoutubeProvider = ({ children }) => {
     }
   };
 
+  const handlePlaylistSelect = (playlistData, startIndex = 0) => {
+    if (!playlistData || !playlistData.items || playlistData.items.length === 0) return;
+    const safeIndex = Math.max(0, Math.min(startIndex, playlistData.items.length - 1));
+    setActivePlaylist(playlistData);
+    setActivePlaylistIndex(safeIndex);
+    const targetItem = playlistData.items[safeIndex];
+    handleVideoSelect({
+      id: targetItem.id,
+      title: targetItem.title,
+      thumbnailUrl: targetItem.thumbnailUrl || `https://i.ytimg.com/vi/${targetItem.id}/hqdefault.jpg`,
+      duration: targetItem.duration,
+      channel: {
+        name: targetItem.author || playlistData.author || "YouTube",
+        avatar: targetItem.authorThumb || playlistData.avatar
+      }
+    });
+  };
+
+  const playPlaylistItem = (index) => {
+    if (!activePlaylist || !activePlaylist.items || activePlaylist.items.length === 0) return;
+    const safeIndex = Math.max(0, Math.min(index, activePlaylist.items.length - 1));
+    setActivePlaylistIndex(safeIndex);
+    const targetItem = activePlaylist.items[safeIndex];
+    handleVideoSelect({
+      id: targetItem.id,
+      title: targetItem.title,
+      thumbnailUrl: targetItem.thumbnailUrl || `https://i.ytimg.com/vi/${targetItem.id}/hqdefault.jpg`,
+      duration: targetItem.duration,
+      channel: {
+        name: targetItem.author || activePlaylist.author || "YouTube",
+        avatar: targetItem.authorThumb || activePlaylist.avatar
+      }
+    });
+  };
+
+  const playNextPlaylistItem = () => {
+    if (!activePlaylist || !activePlaylist.items || activePlaylist.items.length === 0) return;
+    let nextIdx = activePlaylistIndex + 1;
+    if (isPlaylistShuffle) {
+      nextIdx = Math.floor(Math.random() * activePlaylist.items.length);
+    } else if (nextIdx >= activePlaylist.items.length) {
+      if (isPlaylistLoop) nextIdx = 0;
+      else return;
+    }
+    playPlaylistItem(nextIdx);
+  };
+
+  const playPrevPlaylistItem = () => {
+    if (!activePlaylist || !activePlaylist.items || activePlaylist.items.length === 0) return;
+    let prevIdx = activePlaylistIndex - 1;
+    if (prevIdx < 0) {
+      if (isPlaylistLoop) prevIdx = activePlaylist.items.length - 1;
+      else prevIdx = 0;
+    }
+    playPlaylistItem(prevIdx);
+  };
+
+  const togglePlaylistLoop = () => {
+    setIsPlaylistLoop(p => !p);
+  };
+
+  const togglePlaylistShuffle = () => {
+    setIsPlaylistShuffle(p => !p);
+  };
+
+  const closePlaylist = () => {
+    setActivePlaylist(null);
+  };
+
   // API Call: Fetch channel details and channel uploads
   const handleChannelSelect = async (channel) => {
-    pushHistoryState("channel", null, channel, "");
+    const raw = typeof channel === "string" ? { id: channel, name: channel } : (channel || {});
+    let chId = (raw.id && raw.id !== "undefined" && raw.id !== "null") ? raw.id : (raw.channelId || raw.authorId);
+    let chName = raw.name || raw.author || "";
+
+    // Normalize Sơn Tùng M-TP channel ID and handle uppercase 'I' vs lowercase 'l'
+    const lowChName = (chName || "").toLowerCase();
+    const lowChId = (chId || "").toLowerCase();
+    if (
+      chId === "UCIyA28-01x4z60eWQ2kiNbA" ||
+      chId === "UClyA28-01x4z60eWQ2kiNbA" ||
+      lowChId === "uciya28-01x4z60ewq2kinba" ||
+      lowChId === "uclya28-01x4z60ewq2kinba" ||
+      lowChId === "ucgav49s3n3x3k625ax2q8sw" ||
+      lowChId === "@sontungmtp" ||
+      (!lowChName.includes("genius") && (lowChName.includes("sơn tùng") || lowChName.includes("sontung") || lowChName.includes("m-tp")))
+    ) {
+      chId = "UClyA28-01x4z60eWQ2kiNbA";
+      chName = "Sơn Tùng M-TP Official";
+    } else if (chId === "UCyFZMEnm1il5Wv3a6tPscbA" || lowChName === "genius") {
+      chId = "UCyFZMEnm1il5Wv3a6tPscbA";
+      chName = "Genius";
+    } else if (!chId || chId === "undefined" || chId === "null" || chId === "sntngmptofficial") {
+      const lower = chName.toLowerCase();
+      if (lower.includes("genius")) {
+        chId = "UCyFZMEnm1il5Wv3a6tPscbA";
+        chName = "Genius";
+      } else if (lower.includes("sơn tùng") || lower.includes("sontung") || lower.includes("sntng") || lower.includes("m-tp")) {
+        chId = "UClyA28-01x4z60eWQ2kiNbA";
+        chName = "Sơn Tùng M-TP Official";
+      } else if (lower.includes("vtv24") || lower.includes("vtv 24")) {
+        chId = "UCabsTV34JwALXKGMqHpvUiA";
+        chName = "VTV24";
+      } else if (lower.includes("st.319") || lower.includes("st319")) {
+        chId = "UCst319";
+        chName = "ST.319 Entertainment";
+      } else if (lower.includes("mixi")) {
+        chId = "UC5Btzj2W_f5VqAEvE7K2yew";
+        chName = "MixiGaming";
+      } else if (chName) {
+        chId = chName;
+      } else {
+        chId = "UCabsTV34JwALXKGMqHpvUiA";
+        chName = "VTV24";
+      }
+    }
+    const cleanAvatar = chId === "UCyFZMEnm1il5Wv3a6tPscbA" 
+      ? "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s900-c-k-c0x00ffffff-no-rj"
+      : (raw.avatar || getFallbackAvatar(chName));
+    const cleanChannel = { ...raw, id: chId, name: chName, avatar: cleanAvatar };
+    pushHistoryState("channel", null, cleanChannel, "");
+    channel = cleanChannel;
     if (activePage === "watch") {
       setIsMiniplayerActive(true);
       setBackgroundPage("channel");
@@ -1948,43 +3083,134 @@ export const YoutubeProvider = ({ children }) => {
     setChannelSearchPage(1);
     setHasMoreChannelVideos(true);
     
-    const fallbackDesc = channel.description || getChannelFallbackDescription(channel.name);
-    const fallbackSubs = channel.subscribers || formatSubsVi(getDeterministicSubscriberCount(channel.name), channel.name);
+    const fallbackDesc = channel.id === "UCyFZMEnm1il5Wv3a6tPscbA"
+      ? "Genius is the world's biggest collection of song lyrics and musical knowledge."
+      : (channel.description || getChannelFallbackDescription(channel.name));
+    const fallbackSubs = channel.id === "UCyFZMEnm1il5Wv3a6tPscbA"
+      ? "11,6 Tr người đăng ký"
+      : (channel.subscribers || formatSubsVi(getDeterministicSubscriberCount(channel.name), channel.name));
     const fallbackSubsCount = channel.subscribersCount || getDeterministicSubscriberCount(channel.name);
     const fallbackVideos = videos.filter(v => v.channel && v.channel.id === channel.id);
 
     let rawVidCount = channel.videoCount || 0;
-    if (!rawVidCount) {
-      const nameLower = (channel.name || "").toLowerCase();
+    const nameLower = (channel.name || "").toLowerCase();
+    const isSonTungCh = channel.id === "UClyA28-01x4z60eWQ2kiNbA" || nameLower.includes("sơn tùng") || nameLower.includes("sontung") || nameLower.includes("m-tp");
+    if (isSonTungCh) {
+      rawVidCount = 221;
+    } else if (!rawVidCount) {
       if (nameLower.includes("vtv24") || nameLower.includes("vtv 24")) rawVidCount = 54000;
+      else if (nameLower.includes("st.319") || nameLower.includes("st319")) rawVidCount = 290;
       else if (nameLower.includes("fireship")) rawVidCount = 580;
       else if (nameLower.includes("lofi") || nameLower.includes("lofigirl")) rawVidCount = 380;
       else if (nameLower.includes("mkbhd")) rawVidCount = 1600;
+      else if (nameLower.includes("genius")) rawVidCount = 4200;
       else rawVidCount = 150 + (getDeterministicSubscriberCount(channel.name) % 1500);
     }
-    const videoCountFormatted = formatVideosCountVi(rawVidCount);
+    const videoCountFormatted = isSonTungCh ? "221 video" : formatVideosCountVi(rawVidCount);
 
     // Set a placeholder state using immediately available metadata for instant load
     const defaultChannelState = {
       id: channel.id,
       name: channel.name,
-      handle: channel.handle || `@${(channel.name || "").toLowerCase().replace(/\s+/g, "")}`,
-      avatar: channel.avatar,
-      subscribers: fallbackSubs,
-      subscribersCount: fallbackSubsCount,
+      handle: isSonTungCh ? "@Sontungmtp" : (channel.handle || `@${(channel.name || "").toLowerCase().replace(/\s+/g, "")}`),
+      avatar: cleanAvatar,
+      subscribers: isSonTungCh ? "11,9 Tr người đăng ký" : fallbackSubs,
+      subscribersCount: isSonTungCh ? 11900000 : fallbackSubsCount,
       banner: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&q=80",
       description: fallbackDesc,
       videos: fallbackVideos,
       videoCount: rawVidCount,
-      videoCountFormatted: videoCountFormatted
+      videoCountFormatted: videoCountFormatted,
+      isArtist: isSonTungCh
     };
-    setActiveChannel(defaultChannelState);
+    if (!activeChannel || activeChannel.id !== channel.id) {
+      // If already populated with full videos and authentic avatar, use it; otherwise show shimmer skeleton to prevent flashing wrong state
+      if (channel.videos && channel.videos.length > 0 && cleanAvatar && !cleanAvatar.includes("dicebear.com")) {
+        setActiveChannel(channel);
+      } else {
+        setActiveChannel(null);
+      }
+    }
     setActivePage("channel");
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     setIsChannelLoading(true);
 
     try {
+      // Priority 1: High-fidelity InnerTube YouTube API endpoint via local proxy
+      try {
+        const queryId = channel.handle || channel.id || channel.name;
+        const itRes = await fetch(`/api/youtube-channel?id=${encodeURIComponent(queryId)}&name=${encodeURIComponent(channel.name || "")}`);
+        if (itRes.ok) {
+          const itData = await itRes.json();
+          if (itData && (itData.title || itData.channel?.name || (itData.videos && itData.videos.length > 0))) {
+            const itCh = (typeof itData.channel === 'object' && itData.channel !== null) ? itData.channel : {};
+            const chTitle = itData.title || itCh.name || channel.name;
+            const chAvatar = itData.avatar || itCh.avatar || channel.avatar || getFallbackAvatar(chTitle);
+            const chBanner = itData.banner || itCh.banner || channel.banner || getAuthenticBanner(channel.id, chTitle);
+            const chSubs = isSonTungCh ? "11,9 Tr người đăng ký" : (itData.subscribers || itCh.subscribers || fallbackSubs);
+            const chDesc = itData.description || itCh.description || fallbackDesc;
+            const isArtistChannel = !!(itData.releases?.length > 0 || isSonTungCh || (chTitle && chTitle.toLowerCase().includes("sơn tùng")));
+            const parsedVideos = (itData.videos || []).map(v => ({
+              ...v,
+              channel: v.channel || {
+                id: channel.id,
+                name: chTitle,
+                avatar: chAvatar,
+                isVerified: true
+              }
+            }));
+
+            const stringHandle = isSonTungCh 
+              ? "@Sontungmtp" 
+              : (typeof itData.channel === "string" 
+                  ? itData.channel 
+                  : (itCh.handle || itData.handle || channel.handle || `@${(chTitle || "").toLowerCase().replace(/\s+/g, "")}`));
+
+            const rawVidCountStr = isSonTungCh ? "221 video" : (itData.videoCount || itCh.videoCount || `${parsedVideos.length} video`);
+
+            const fullChannelObj = {
+              id: channel.id,
+              name: chTitle,
+              handle: stringHandle,
+              avatar: chAvatar,
+              banner: chBanner,
+              subscribers: chSubs,
+              subscribersCount: isSonTungCh ? 11900000 : fallbackSubsCount,
+              description: chDesc,
+              videos: parsedVideos,
+              shorts: itData.shorts || [],
+              streams: itData.streams || [],
+              releases: itData.releases || [],
+              playlists: itData.playlists || [],
+              posts: itData.posts || [],
+              homeShelves: itData.homeShelves || [],
+              about: itData.about || itCh.about || {},
+              isArtist: isArtistChannel,
+              isVerified: true,
+              tabFlags: itData.tabFlags || itCh.tabFlags || null,
+              videoCount: rawVidCountStr,
+              videoCountFormatted: rawVidCountStr
+            };
+
+            setActiveChannel(fullChannelObj);
+            setHasMoreChannelVideos(false);
+            setIsChannelLoading(false);
+
+            if (parsedVideos.length > 0) {
+              setVideos(prev => {
+                const uniqueIds = new Set(parsedVideos.map(v => v.id));
+                const filtered = prev.filter(v => !uniqueIds.has(v.id));
+                return [...parsedVideos, ...filtered];
+              });
+            }
+            return;
+          }
+        }
+      } catch (innerTubeErr) {
+        console.warn("Direct InnerTube channel fetch attempt had an error, trying Invidious:", innerTubeErr);
+      }
+
       const { data: channelDetails, instance } = await fetchFromInvidious(
         `/api/v1/channels/${channel.id}`,
         (res) => res && res.author && res.subCount !== undefined
@@ -2202,10 +3428,73 @@ export const YoutubeProvider = ({ children }) => {
       if (initial.page === "search" && initial.query) {
         setSearchQuery(initial.query);
       } else if (initial.page === "watch" && initial.videoId) {
-        const tempVideo = { id: initial.videoId, title: "Đang tải...", channel: { name: "Kênh", avatar: "" } };
+        const foundMock = mockVideos.find(m => m.id === initial.videoId);
+        const tempVideo = foundMock || { id: initial.videoId, title: "", channel: { name: "", avatar: DEFAULT_AVATAR } };
         handleVideoSelect(tempVideo);
       } else if (initial.page === "channel" && initial.channelId) {
-        const tempChannel = { id: initial.channelId, name: "Kênh" };
+        let chId = (initial.channelId && initial.channelId !== "undefined" && initial.channelId !== "null") ? initial.channelId : "UCst319";
+        if (chId === "UCGaV49s3N3x3k625aX2Q8sw") chId = "UClyA28-01x4z60eWQ2kiNbA";
+        const isGenius = chId === "UCyFZMEnm1il5Wv3a6tPscbA" || chId.toLowerCase().includes("genius");
+        const isSonTung = !isGenius && (chId === "UClyA28-01x4z60eWQ2kiNbA" || chId.toLowerCase().includes("sontung") || chId.toLowerCase().includes("sntng"));
+        const isSt319 = chId === "UCst319" || chId.toLowerCase().includes("st319");
+        const isTony = chId === "UC7CplVVDYKBeraVcPuI3xUQ" || chId.toLowerCase().includes("tonyphung");
+        const isVtv24 = chId === "UCabsTV34JwALXKGMqHpvUiA" || chId.toLowerCase().includes("vtv24");
+        const isTng = chId === "UC3QLI0FHwACCaa91Xdpam2A" || chId.toLowerCase().includes("trainghiemgame");
+        const isNgaSumo = chId === "UCGfonn2-sO5-aBYKWzHKKjQ" || chId.toLowerCase().includes("ngasumo");
+        
+        let tempChannel;
+        if (isGenius) {
+          tempChannel = {
+            id: "UCyFZMEnm1il5Wv3a6tPscbA",
+            name: "Genius",
+            avatar: "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s900-c-k-c0x00ffffff-no-rj",
+            subscribers: "11,6 Tr người đăng ký",
+            description: "Genius is the world's biggest collection of song lyrics and musical knowledge."
+          };
+        } else if (isSonTung) {
+          tempChannel = {
+            id: "UClyA28-01x4z60eWQ2kiNbA",
+            name: "Sơn Tùng M-TP Official",
+            avatar: "https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s900-c-k-c0x00ffffff-no-rj"
+          };
+        } else if (isSt319) {
+          tempChannel = {
+            id: "UCst319",
+            name: "ST.319 Entertainment",
+            avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj"
+          };
+        } else if (isTony) {
+          tempChannel = {
+            id: "UC7CplVVDYKBeraVcPuI3xUQ",
+            name: "Tony Phùng Studio",
+            avatar: "https://yt3.ggpht.com/tKWJdOzoU96QEQfhHQN-jo_ElZmOu6HYXcO-57G7Cg1HKxuWI5QdKu8J6rBrQp96RKG6gBh-2A=s512-c-k-c0x00ffffff-no-rj-mo",
+            subscribers: "628 N người đăng ký"
+          };
+        } else if (isVtv24) {
+          tempChannel = {
+            id: "UCabsTV34JwALXKGMqHpvUiA",
+            name: "VTV24",
+            avatar: "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj",
+            subscribers: "7,01 Tr người đăng ký"
+          };
+        } else if (isTng) {
+          tempChannel = {
+            id: "UC3QLI0FHwACCaa91Xdpam2A",
+            name: "Trải Nghiệm Game",
+            avatar: "https://yt3.ggpht.com/eAmYTWd8BBUz2UN4rT-dajfb9cCrteWe8cGGIuvRW2JJSNQh8nwZ693UGjIKlgkYggMNCHu5=s512-c-k-c0x00ffffff-no-rj-mo",
+            subscribers: "2,0 Tr người đăng ký"
+          };
+        } else if (isNgaSumo) {
+          tempChannel = {
+            id: "UCGfonn2-sO5-aBYKWzHKKjQ",
+            name: "Nga Sumo",
+            avatar: "https://yt3.ggpht.com/Ib0hDZKlfNjeAsulTRSLF91KBj-ICVt7DJ230MWsVp_BeruEgRvjjPgzXy_4Q3iA97o2SxUKMI0=s512-c-k-c0x00ffffff-no-rj-mo",
+            subscribers: "607 N người đăng ký"
+          };
+        } else {
+          const foundChMock = mockVideos.find(m => m.channel?.id === chId);
+          tempChannel = foundChMock ? foundChMock.channel : { id: chId, name: chId, avatar: DEFAULT_AVATAR };
+        }
         handleChannelSelect(tempChannel);
       }
     }
@@ -2274,10 +3563,13 @@ export const YoutubeProvider = ({ children }) => {
     }
   }, [activeChannel, isChannelLoading, hasMoreChannelVideos, channelContinuation, fetchFromInvidious, channelSearchPage]);
 
-  // Fetch more comments using continuation token
+  // Fetch more comments using continuation token or dynamic expansion
   const fetchMoreComments = useCallback(async (videoId, continuation) => {
-    if (!videoId || !continuation) return false;
-    try {
+    if (!videoId) return false;
+    let newComments = [];
+    let nextContinuation = null;
+
+    if (continuation) {
       for (const cInst of FALLBACK_INSTANCES) {
         try {
           const url = `${cInst}/api/v1/comments/${videoId}?continuation=${encodeURIComponent(continuation)}&hl=vi`;
@@ -2285,19 +3577,17 @@ export const YoutubeProvider = ({ children }) => {
           if (resp.ok) {
             const data = await resp.json();
             if (data.comments && data.comments.length > 0) {
-              const newComments = data.comments.map(c => {
+              newComments = data.comments.map(c => {
                 let avatar = getFallbackAvatar(c.author);
                 if (c.authorThumbnails && c.authorThumbnails.length > 0) {
                   const raw = c.authorThumbnails[c.authorThumbnails.length - 1].url;
                   if (raw.startsWith("http")) avatar = raw;
                   else if (raw.startsWith("//")) avatar = `https:${raw}`;
-                  // else keep fallback — don't proxy through unknown instances
                 }
                 return {
                   id: c.commentId || `c_${Math.random().toString(36).slice(2)}`,
                   author: String(c.author || "Người dùng YouTube").slice(0, 100),
                   avatar,
-                  // stripHtml prevents XSS from raw HTML in contentHtml
                   text: stripHtml(c.content || c.contentHtml || "").slice(0, 2000),
                   uploadedAt: translateDateVi(c.publishedText || ""),
                   likes: typeof c.likeCount === 'number' ? c.likeCount : 0,
@@ -2305,23 +3595,34 @@ export const YoutubeProvider = ({ children }) => {
                   replyCount: typeof c.replyCount === 'number' ? c.replyCount : 0
                 };
               });
-              setActiveVideo(prev => ({
-                ...prev,
-                comments: [...(prev.comments || []), ...newComments],
-                commentsContinuation: data.continuation || null
-              }));
-              return true;
+              nextContinuation = data.continuation || null;
+              break;
             }
           }
         } catch (err) {
           continue;
         }
       }
-    } catch (e) {
-      console.warn("fetchMoreComments failed:", e);
     }
-    return false;
-  }, []);
+
+    if (newComments.length === 0) {
+      // Dynamic fallback comments for rich infinite discussion reading
+      const seedVal = Math.floor(Math.random() * 9000);
+      const moreComments = generateRealisticComments({
+        id: `${videoId}_page_${seedVal}`,
+        title: activeVideo?.title || "Video hay",
+        channel: activeVideo?.channel
+      });
+      newComments = moreComments.slice(0, 8);
+    }
+
+    setActiveVideo(prev => ({
+      ...prev,
+      comments: [...(prev?.comments || []), ...newComments],
+      commentsContinuation: nextContinuation
+    }));
+    return true;
+  }, [activeVideo]);
 
   const formatShortLikes = (count) => {
     if (count === undefined || count === null || isNaN(count)) return "0";
@@ -2339,123 +3640,229 @@ export const YoutubeProvider = ({ children }) => {
   const fetchHomeShorts = async () => {
     let finalShorts = [];
     try {
-      const { data, instance } = await fetchFromInvidious(
-        `/api/v1/search?q=${encodeURIComponent("vietnam shorts #shorts")}&type=video`,
-        (res) => Array.isArray(res) && res.length > 0
-      );
-      const filtered = (data || [])
-        .filter(item => item.type === "video" && item.videoId && item.lengthSeconds && item.lengthSeconds > 0 && item.lengthSeconds <= 75)
-        .slice(0, 6)
-        .map(item => {
-          const likesBase = item.likeCount || Math.floor((item.viewCount || 10000) * 0.04);
-          const avatar = resolveChannelAvatar(item.authorThumbnails, item.author, instance, item.authorId);
-          return {
-            id: `short_api_${item.videoId}`,
-            videoId: item.videoId,
-            title: item.title || "",
-            views: formatShortLikes(item.viewCount || 0),
-            likes: likesBase,
-            commentsCount: Math.floor(likesBase * 0.08),
+      const localRes = await fetch('/api/youtube-search?q=vietnam%20shorts%20trending');
+      if (localRes.ok) {
+        const json = await localRes.json();
+        const shortCandidates = (json.videos || []).filter(v => v.isShort || (v.duration && (v.duration === 'Shorts' || v.duration.includes(':') && parseInt(v.duration.split(':')[0]) === 0)));
+        if (shortCandidates.length > 0) {
+          finalShorts = shortCandidates.slice(0, 16).map(s => ({
+            id: `short_api_${s.id}`,
+            videoId: s.id,
+            title: s.title || "Shorts video",
+            views: s.views || "1 Tr",
+            likes: 120000,
+            commentsCount: 850,
             channel: {
-              id: item.authorId || (item.author || "").toLowerCase().replace(/\s+/g, ""),
-              name: item.author || "",
-              avatar
+              id: s.channel?.id || "shorts_channel",
+              name: s.channel?.name || "YouTube Shorts",
+              avatar: s.channel?.avatar || "https://www.youtube.com/s/desktop/f7158752/img/favicon_144x144.png"
             }
-          };
-        });
-      finalShorts = filtered || [];
-    } catch (e) {
-      console.warn("Failed to fetch home shorts:", e);
+          }));
+        }
+      }
+    } catch (localErr) {
+      // Fallback to Invidious
     }
 
-    if (finalShorts.length < 6) {
-      const fallbacks = [
-        {
-          videoId: "sO7Kps1muP0",
-          title: "Hài Hước vui nhộn #4. #shorts. #giaitrimoingay. #funny. #suhuong",
-          views: "15 Tr",
-          likes: 420000,
-          commentsCount: 1200,
-          channel: {
-            id: "UCjtmyHIgpDwaLoytITs0QYg",
-            name: "Thiên Ý Giải Trí",
-            avatar: "https://api.dicebear.com/7.x/initials/svg?seed=TY"
-          }
-        },
-        {
-          videoId: "DGwx3b65Xto",
-          title: "Tuyệt tình ca | Chú hàng xóm | Hot Trend TIKTOK #shorts",
-          views: "8,9 Tr",
-          likes: 280000,
-          commentsCount: 940,
-          channel: {
-            id: "UCkiIrwp_7IMy50IPhtSv_Bg",
-            name: "Ci Đi Đi",
-            avatar: "https://api.dicebear.com/7.x/initials/svg?seed=CDD"
-          }
-        },
-        {
-          videoId: "tSZbfzw2tUs",
-          title: "tiktok hot trend 36 #shorts cũng là nhạc Thái nhưng nó lạ lắm",
-          views: "12 Tr",
-          likes: 540000,
-          commentsCount: 2100,
-          channel: {
-            id: "UCfc97rtLrhbtPq7c3Pg3_3A",
-            name: "tiktok hot trend",
-            avatar: "https://api.dicebear.com/7.x/initials/svg?seed=THT"
-          }
-        },
-        {
-          videoId: "fRT4mi6NMjE",
-          title: "Đừng Bắt Anh Hứa | Demo | #shorts | Bình Gold | Nhạc Trend",
-          views: "5,4 Tr",
-          likes: 190000,
-          commentsCount: 850,
-          channel: {
-            id: "UCJWrgybxe6UtHgNr2JQsEJQ",
-            name: "Nhạc Trend",
-            avatar: "https://api.dicebear.com/7.x/initials/svg?seed=NT"
-          }
-        },
-        {
-          videoId: "y1YrPt9Gdt0",
-          title: "Nhạc Trung hot nhất hiện nay🎶#shorts #nhaccutetiktok #dethuong",
-          views: "3,2 Tr",
-          likes: 120000,
-          commentsCount: 430,
-          channel: {
-            id: "UCdaTEaoJXmjwr1oOFL4-2Og",
-            name: "Bún Bò Remix",
-            avatar: "https://api.dicebear.com/7.x/initials/svg?seed=BBR"
-          }
-        },
-        {
-          videoId: "ZVXOhT6kwhQ",
-          title: "TÔN THỜ MỘT TÌNH YÊU - BẰNG CƯỜNG #SHORTS NHẠC TRẺ",
-          views: "6,7 Tr",
-          likes: 210000,
-          commentsCount: 1100,
-          channel: {
-            id: "UCKRLY9PzqtA7KnbbWo_oFxg",
-            name: "Bằng Cường Official",
-            avatar: "https://api.dicebear.com/7.x/initials/svg?seed=BC"
-          }
-        }
-      ];
-      const needed = 6 - finalShorts.length;
-      const fallbackShorts = fallbacks.slice(0, needed).map((item, idx) => ({
-        id: `short_fb_${item.videoId}_home_${idx}`,
-        videoId: item.videoId,
-        title: item.title,
-        views: item.views,
-        likes: item.likes,
-        commentsCount: item.commentsCount,
-        channel: item.channel
-      }));
-      finalShorts = [...finalShorts, ...fallbackShorts];
+    if (finalShorts.length === 0) {
+      try {
+        const { data, instance } = await fetchFromInvidious(
+          `/api/v1/search?q=${encodeURIComponent("vietnam shorts #shorts")}&type=video`,
+          (res) => Array.isArray(res) && res.length > 0
+        );
+        const filtered = (data || [])
+          .filter(item => item.type === "video" && item.videoId && (item.viewCount || 0) >= 50000 && item.lengthSeconds && item.lengthSeconds > 0 && item.lengthSeconds <= 75)
+          .slice(0, 20)
+          .map(item => {
+            const likesBase = item.likeCount || Math.floor((item.viewCount || 10000) * 0.04);
+            const avatar = resolveChannelAvatar(item.authorThumbnails, item.author, instance, item.authorId);
+            return {
+              id: `short_api_${item.videoId}`,
+              videoId: item.videoId,
+              title: item.title || "",
+              views: formatShortLikes(item.viewCount || 0),
+              likes: likesBase,
+              commentsCount: Math.floor(likesBase * 0.08),
+              channel: {
+                id: item.authorId || (item.author || "").toLowerCase().replace(/\s+/g, ""),
+                name: item.author || "",
+                avatar
+              }
+            };
+          });
+        finalShorts = filtered || [];
+      } catch (e) {
+        console.warn("Failed to fetch home shorts:", e);
+      }
     }
-    setHomeShorts(finalShorts);
+
+    const fallbacks = [
+      {
+        videoId: "sO7Kps1muP0",
+        title: "Hài Hước vui nhộn #4 #shorts #giaitrimoingay #funny",
+        views: "15 Tr",
+        likes: 420000,
+        commentsCount: 1200,
+        channel: { id: "UCjtmyHIgpDwaLoytITs0QYg", name: "Thiên Ý Giải Trí", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "DGwx3b65Xto",
+        title: "Tuyệt tình ca | Chú hàng xóm | Hot Trend TIKTOK #shorts",
+        views: "8,9 Tr",
+        likes: 280000,
+        commentsCount: 940,
+        channel: { id: "UCkiIrwp_7IMy50IPhtSv_Bg", name: "Ci Đi Đi", avatar: "https://yt3.googleusercontent.com/4KreeefY-ytOPUKbpbDQnIqzi-b2qOP8ILqlNDThbk5T8kYJIT2EKvj9uQnv8FHi15quYN5L=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "tSZbfzw2tUs",
+        title: "tiktok hot trend 36 #shorts cũng là nhạc Thái nhưng nó lạ lắm",
+        views: "12 Tr",
+        likes: 540000,
+        commentsCount: 2100,
+        channel: { id: "UCfc97rtLrhbtPq7c3Pg3_3A", name: "tiktok hot trend", avatar: "https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "fRT4mi6NMjE",
+        title: "Đừng Bắt Anh Hứa | Demo | #shorts | Bình Gold | Nhạc Trend",
+        views: "5,4 Tr",
+        likes: 190000,
+        commentsCount: 850,
+        channel: { id: "UCJWrgybxe6UtHgNr2JQsEJQ", name: "Nhạc Trend", avatar: "https://yt3.googleusercontent.com/AXqFXnPY2vU5-WyS3mBYx_I1PCdq2Qwddk81S3cLXv2_GlrU4jDbWChvlWsJyNsD02jUbKJ5pQ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "y1YrPt9Gdt0",
+        title: "Nhạc Trung hot nhất hiện nay #shorts #nhaccutetiktok #dethuong",
+        views: "3,2 Tr",
+        likes: 120000,
+        commentsCount: 430,
+        channel: { id: "UCdaTEaoJXmjwr1oOFL4-2Og", name: "Bún Bò Remix", avatar: "https://yt3.googleusercontent.com/Oe2okarbEgYT81PaWYKYD0AGLVCF4ykwKFT-yHxaABD8fKxMc-ETntSWoXNrX9jf-RXnWc3cI3M=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "ZVXOhT6kwhQ",
+        title: "TÔN THỜ MỘT TÌNH YÊU - BẰNG CƯỜNG #SHORTS NHẠC TRẺ",
+        views: "6,7 Tr",
+        likes: 210000,
+        commentsCount: 1100,
+        channel: { id: "UCKRLY9PzqtA7KnbbWo_oFxg", name: "Bằng Cường Official", avatar: "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "sycAsXYlqOI",
+        title: "Về Quê Ngoại Đón Năm Mới #shorts #shortsvietnam #haihuoc #bientv",
+        views: "4,8 Tr",
+        likes: 220000,
+        commentsCount: 890,
+        channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "IQxuMuBwq1g",
+        title: "Bảo Vệ Đồ Chơi Khỏi Đám Em Họ #shorts #shortsvietnam #haihuoc #bientv",
+        views: "3,9 Tr",
+        likes: 180000,
+        commentsCount: 710,
+        channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "PnAIKaa2pnU",
+        title: "Muốn Sinh Con Trai Hay Con Gái #shorts #shortsvietnam #haihuoc #bientv",
+        views: "5,3 Tr",
+        likes: 260000,
+        commentsCount: 1150,
+        channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "STRuEfYoOCY",
+        title: "Ăn Súp Bò Tô Quán Mộc | WillinVietnam | #shorts",
+        views: "2,4 Tr",
+        likes: 110000,
+        commentsCount: 420,
+        channel: { id: "UCwillinvietnam", name: "Will in Vietnam", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "YtjVY_ShBQo",
+        title: "Vấn Đề Của Tôi Là Của Cả Xóm #shorts #shortsvietnam #haihuoc #bientv",
+        views: "6,1 Tr",
+        likes: 310000,
+        commentsCount: 1420,
+        channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "Qr35EUHjPdc",
+        title: "Nếu bạn muốn học tiếng Anh | Will in Vietnam | #Shorts",
+        views: "1,8 Tr",
+        likes: 95000,
+        commentsCount: 360,
+        channel: { id: "UCwillinvietnam", name: "Will in Vietnam", avatar: "https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "3YQuGNwr_fM",
+        title: "Tổng hợp những video hài hước phần 5 #haihuoc #giaitri #shorts",
+        views: "4,2 Tr",
+        likes: 195000,
+        commentsCount: 820,
+        channel: { id: "UCmeomeotv", name: "Mèo Mèo TV", avatar: "https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "juau7F8Hjg4",
+        title: "Tổng hợp những video hài hước nhất của Doãn Doãn | Phần 1 #shorts",
+        views: "7,5 Tr",
+        likes: 370000,
+        commentsCount: 1560,
+        channel: { id: "UCcheemszui", name: "Cheems Zui", avatar: "https://yt3.googleusercontent.com/AXqFXnPY2vU5-WyS3mBYx_I1PCdq2Qwddk81S3cLXv2_GlrU4jDbWChvlWsJyNsD02jUbKJ5pQ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "ZFxhKXnU3tc",
+        title: "Tổng hợp những video hài hước nhất của Doãn Doãn | Phần 2 #shorts",
+        views: "5,8 Tr",
+        likes: 290000,
+        commentsCount: 1240,
+        channel: { id: "UCcheemszui", name: "Cheems Zui", avatar: "https://yt3.googleusercontent.com/AXqFXnPY2vU5-WyS3mBYx_I1PCdq2Qwddk81S3cLXv2_GlrU4jDbWChvlWsJyNsD02jUbKJ5pQ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "nK1TiBfaUbo",
+        title: "Tổng hợp những video hài hước nhất của Doãn Doãn | Phần 3 #shorts",
+        views: "6,9 Tr",
+        likes: 340000,
+        commentsCount: 1390,
+        channel: { id: "UCcheemszui", name: "Cheems Zui", avatar: "https://yt3.googleusercontent.com/AXqFXnPY2vU5-WyS3mBYx_I1PCdq2Qwddk81S3cLXv2_GlrU4jDbWChvlWsJyNsD02jUbKJ5pQ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "t72b7IcG18w",
+        title: "Nếu Tôi Là Nhân Viên Jollibee #shorts #shortsvietnam #haihuoc #bientv",
+        views: "4,6 Tr",
+        likes: 230000,
+        commentsCount: 970,
+        channel: { id: "UCbientv", name: "BIEN TV", avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj" }
+      },
+      {
+        videoId: "A5AowuzzdZk",
+        title: "Tổng hợp những video hài hước nhất của Doãn Doãn | Phần 4 #shorts",
+        views: "8,1 Tr",
+        likes: 410000,
+        commentsCount: 1680,
+        channel: { id: "UCcheemszui", name: "Cheems Zui", avatar: "https://yt3.googleusercontent.com/AXqFXnPY2vU5-WyS3mBYx_I1PCdq2Qwddk81S3cLXv2_GlrU4jDbWChvlWsJyNsD02jUbKJ5pQ=s240-c-k-c0x00ffffff-no-rj" }
+      }
+    ];
+
+    // Ensure we reach at least 15 shorts and strictly divisible by 5
+    const existingVideoIds = new Set(finalShorts.map(s => s.videoId));
+    for (const fb of fallbacks) {
+      if (!existingVideoIds.has(fb.videoId)) {
+        finalShorts.push({
+          id: `short_fb_${fb.videoId}_${finalShorts.length}`,
+          ...fb
+        });
+        existingVideoIds.add(fb.videoId);
+      }
+      if (finalShorts.length >= 40) break;
+    }
+
+    // Guarantee strictly divisible by 5 so each row is full
+    const safeCount = Math.floor(finalShorts.length / 5) * 5;
+    const activeList = finalShorts.slice(0, safeCount || finalShorts.length);
+    try {
+      localStorage.setItem("yt_cached_home_shorts", JSON.stringify(activeList));
+    } catch (e) {}
+    setHomeShorts(activeList);
   };
 
   const fetchMoreRelatedVideos = useCallback(async (video) => {
@@ -2563,6 +3970,11 @@ export const YoutubeProvider = ({ children }) => {
     const later = safeJsonParse(localStorage.getItem(`yt_later_${safeUser.email}`), []);
     setWatchLater(Array.isArray(later) ? later.filter(s => typeof s === 'string') : []);
 
+    const downloads = safeJsonParse(localStorage.getItem(`yt_downloads_${safeUser.email}`), []);
+    if (Array.isArray(downloads) && downloads.length > 0) {
+      setDownloadedVideos(downloads);
+    }
+
     setNotifications([
       { id: "n_welcome", channelName: "YouTube", avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=youtube", message: `Chào mừng ${safeUser.name} đến với YouTube!`, time: "Vừa xong" }
     ]);
@@ -2598,6 +4010,7 @@ export const YoutubeProvider = ({ children }) => {
       localStorage.setItem(`yt_liked_${currentUser.email}`, JSON.stringify(likedVideos));
       localStorage.setItem(`yt_history_${currentUser.email}`, JSON.stringify(watchHistory));
       localStorage.setItem(`yt_later_${currentUser.email}`, JSON.stringify(watchLater));
+      localStorage.setItem(`yt_downloads_${currentUser.email}`, JSON.stringify(downloadedVideos));
     }
     setCurrentUser(null);
     localStorage.removeItem("yt_user");
@@ -2605,6 +4018,7 @@ export const YoutubeProvider = ({ children }) => {
     setLikedVideos([]);
     setWatchHistory([]);
     setWatchLater([]);
+    setDownloadedVideos([]);
     setNotifications([]);
   };
 
@@ -2614,6 +4028,72 @@ export const YoutubeProvider = ({ children }) => {
       const isSaved = prev.includes(videoId);
       return isSaved ? prev.filter(id => id !== videoId) : [...prev, videoId];
     });
+  };
+
+  const isDownloaded = (videoId) => {
+    return downloadedVideos.some(v => v.id === videoId);
+  };
+
+  const removeDownload = (videoId) => {
+    setDownloadedVideos((prev) => {
+      const next = prev.filter(v => v.id !== videoId);
+      localStorage.setItem("yt_downloaded_videos", JSON.stringify(next));
+      if (currentUser?.email) {
+        localStorage.setItem(`yt_downloads_${currentUser.email}`, JSON.stringify(next));
+      }
+      return next;
+    });
+    showToast("Đã xóa khỏi nội dung tải xuống");
+  };
+
+  const downloadVideo = async (video) => {
+    if (!video || !video.id) return;
+    
+    const cleanVideo = {
+      id: video.id,
+      title: video.title || "Video không có tiêu đề",
+      thumbnailUrl: video.thumbnailUrl || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
+      channel: {
+        id: video.channel?.id || video.authorId || "",
+        name: video.channel?.name || video.author || "Kênh",
+        avatar: video.channel?.avatar || ""
+      },
+      views: video.views || "10 N lượt xem",
+      uploadedAt: video.uploadedAt || "Gần đây",
+      duration: video.duration || "0:00",
+      formatStreams: video.formatStreams || []
+    };
+
+    setDownloadedVideos((prev) => {
+      if (prev.some(v => v.id === cleanVideo.id)) {
+        showToast("Video đã có trong mục tải xuống!");
+        return prev;
+      }
+      const next = [cleanVideo, ...prev];
+      localStorage.setItem("yt_downloaded_videos", JSON.stringify(next));
+      if (currentUser?.email) {
+        localStorage.setItem(`yt_downloads_${currentUser.email}`, JSON.stringify(next));
+      }
+      showToast("Đã lưu vào danh sách Tải xuống xem ngoại tuyến!");
+      return next;
+    });
+
+    try {
+      showToast("Đang chuẩn bị tải video chất lượng cao trực tiếp về máy...");
+      const downloadEndpoint = `/api/download?id=${encodeURIComponent(cleanVideo.id)}&title=${encodeURIComponent(cleanVideo.title)}`;
+      const a = document.createElement("a");
+      a.href = downloadEndpoint;
+      a.setAttribute("download", `${cleanVideo.title.replace(/[/\\?%*:|"<>]/g, '_')}.mp4`);
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    } catch (e) {
+      console.warn("Fast download error, falling back:", e);
+    }
+
+    // 2. Fallback notification
+    showToast("Đã gửi yêu cầu tải video trực tiếp về máy!");
   };
 
   // Local interactives
@@ -2776,6 +4256,10 @@ export const YoutubeProvider = ({ children }) => {
         checkAuth,
         watchLater,
         toggleWatchLater,
+        downloadedVideos,
+        downloadVideo,
+        removeDownload,
+        isDownloaded,
         channelContinuation,
         hasMoreChannelVideos,
         fetchMoreChannelVideos,
@@ -2796,6 +4280,21 @@ export const YoutubeProvider = ({ children }) => {
         setBackgroundPage,
         channelAvatars,
         searchMockVideos,
+        toast,
+        showToast,
+        activePlaylist,
+        setActivePlaylist,
+        activePlaylistIndex,
+        setActivePlaylistIndex,
+        isPlaylistLoop,
+        isPlaylistShuffle,
+        handlePlaylistSelect,
+        playPlaylistItem,
+        playNextPlaylistItem,
+        playPrevPlaylistItem,
+        togglePlaylistLoop,
+        togglePlaylistShuffle,
+        closePlaylist,
       }}
     >
       {children}

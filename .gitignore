@@ -12,6 +12,18 @@ dist
 dist-ssr
 *.local
 
+# Media downloads & cache
+public/downloads/
+*.mp4
+*.m4a
+*.part
+*.png
+*.jpg
+*.jpeg
+!public/*.png
+!public/*.svg
+!public/*.ico
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +34,22 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Scratch, experiments and unrelated tools
+chess-trainer/
+chrono_spec/
+.agents/
+scripts/
+PAPER.md
+paper.tex
+run_experiment.py
+scrape_vtv24_dataset.py
+get_vtv24_info.py
+audit_mock_ids.js
+deep_audit_results.json
+player_info.json
+found_read.txt
+test_*.js
+test_*.mjs
+test_*.py
+scratch/

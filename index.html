@@ -6,20 +6,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YouTube</title>
     <meta name="description" content="Xem video Việt Nam hay nhất - Âm nhạc, Tin tức, Giải trí và hơn thế nữa." />
-    <!-- Security headers via meta tags -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
-    <!-- CSP: allow YouTube, Google, Invidious APIs and image CDNs -->
-    <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' https://accounts.google.com https://www.youtube.com https://s.ytimg.com;
-      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-      font-src 'self' https://fonts.gstatic.com;
-      frame-src https://www.youtube-nocookie.com https://www.youtube.com;
-      img-src 'self' data: blob: https: http:;
-      media-src 'self' https: http:;
-      connect-src 'self' https: http:;
-    " />
+    <link rel="preconnect" href="https://www.youtube.com" />
+    <link rel="preconnect" href="https://www.youtube-nocookie.com" />
+    <link rel="preconnect" href="https://i.ytimg.com" />
+    <link rel="preconnect" href="https://yt3.ggpht.com" />
+    <script src="https://www.youtube.com/iframe_api"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>

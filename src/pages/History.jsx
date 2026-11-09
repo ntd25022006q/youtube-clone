@@ -1,36 +1,38 @@
-﻿import React, { useContext } from "react";
+import React, { useContext } from "react";
 import { Trash2, X } from "lucide-react";
-import { YoutubeContext } from "../context/YoutubeContext";
+import { YoutubeContext, handleThumbnailError } from "../context/YoutubeContext";
 import "./pages.css";
 
 const History = () => {
   const { watchHistory, clearHistory, handleVideoSelect, setWatchHistory } = useContext(YoutubeContext);
 
+  const safeHistory = Array.isArray(watchHistory) ? watchHistory : [];
+
   const handleRemoveFromHistory = (e, videoId) => {
     e.stopPropagation();
-    setWatchHistory(prev => prev.filter(v => v.id !== videoId));
+    setWatchHistory(prev => (Array.isArray(prev) ? prev : []).filter(v => v && v.id !== videoId));
   };
 
   return (
     <div className="history-page-container">
       <div className="history-header">
-        <h1>{"Nh\u1eadt k\u00fd xem"}</h1>
-        {watchHistory.length > 0 && (
+        <h1>{"Nhật ký xem"}</h1>
+        {safeHistory.length > 0 && (
           <button className="clear-history-btn" onClick={clearHistory}>
             <Trash2 size={16} />
-            <span>{"X\u00f3a t\u1ea5t c\u1ea3 nh\u1eadt k\u00fd xem"}</span>
+            <span>{"Xóa tất cả nhật ký xem"}</span>
           </button>
         )}
       </div>
 
-      {watchHistory.length === 0 ? (
+      {safeHistory.length === 0 ? (
         <div className="no-history">
-          <h2>{"Theo d\u00f5i nh\u1eefng video b\u1ea1n xem"}</h2>
-          <p>{"Nh\u1eadt k\u00fd xem kh\u00f4ng kh\u1ea3 d\u1ee5ng khi b\u1ea1n \u0111\u0103ng xu\u1ea5t ho\u1eb7c khi nh\u1eadt k\u00fd \u0111\u00e3 b\u1ecb x\u00f3a."}</p>
+          <h2>{"Theo dõi những video bạn xem"}</h2>
+          <p>{"Nhật ký xem không khả dụng khi bạn đăng xuất hoặc khi nhật ký đã bị xóa."}</p>
         </div>
       ) : (
         <div className="history-list">
-          {watchHistory.map((video, index) => (
+          {safeHistory.filter(v => v && v.id).map((video, index) => (
             <div
               key={`${video.id}-${index}`}
               className="history-row-card"
@@ -39,10 +41,10 @@ const History = () => {
             >
               <div className="history-thumbnail-container">
                 <img
-                  src={video.thumbnailUrl || `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`}
+                  src={video.thumbnailUrl || `https://i.ytimg.com/vi/${video.id}/sddefault.jpg`}
                   alt={video.title}
                   className="history-thumbnail"
-                  onError={e => { e.target.src = `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`; }}
+                  onError={(e) => handleThumbnailError(e, video.id, video.title)}
                 />
                 <span className="history-duration">{video.duration}</span>
               </div>

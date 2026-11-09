@@ -1,12 +1,27 @@
-﻿import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { YoutubeContext } from "../context/YoutubeContext";
 import VideoCard from "../components/VideoCard";
 import "./pages.css";
 
+import { Tv } from "lucide-react";
+
 const Subscriptions = () => {
-  const { videos, subscriptions, fetchFromInvidious, handleVideoSelect } = useContext(YoutubeContext);
+  const { videos, subscriptions, fetchFromInvidious, handleVideoSelect, currentUser, setShowLoginModal } = useContext(YoutubeContext);
   const [extraVideos, setExtraVideos] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  if (!currentUser) {
+    return (
+      <div className="subscriptions-page" style={{ padding: "60px 24px", minHeight: "100vh", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Tv size={64} style={{ opacity: 0.3, marginBottom: "16px" }} />
+        <h2 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px" }}>Đừng bỏ lỡ các video mới</h2>
+        <p style={{ color: "#aaa", fontSize: "14px", maxWidth: "420px", marginBottom: "20px" }}>Đăng nhập để xem cập nhật từ các kênh YouTube yêu thích của bạn.</p>
+        <button className="google-signin-btn-blue" onClick={() => setShowLoginModal(true)}>
+          <span>Đăng nhập</span>
+        </button>
+      </div>
+    );
+  }
 
   // Videos from currently loaded state that match subscribed channels
   const subscribedFromState = videos.filter(

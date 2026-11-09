@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { Menu, Search, Mic, Video, Bell, X, User, LogOut } from "lucide-react";
+import { Menu, Search, Mic, Video, Bell, X, User, LogOut, Globe, Zap } from "lucide-react";
 import { YoutubeContext } from "../context/YoutubeContext";
 import { VoiceSearchModal, CreateVideoModal, GoogleLoginModal } from "./Modals";
 import "./components.css";
@@ -20,6 +20,8 @@ const Header = () => {
     setShowLoginModal,
     checkAuth,
     handleVideoSelect,
+    isNativeMode,
+    setIsNativeMode,
   } = useContext(YoutubeContext);
 
   const [inputVal, setInputVal] = useState("");
@@ -27,6 +29,7 @@ const Header = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
 
@@ -36,7 +39,7 @@ const Header = () => {
 
   // Sync unread notifications count
   useEffect(() => {
-    setUnreadNotifications(notifications.length);
+    setUnreadNotifications(Array.isArray(notifications) ? notifications.length : 0);
   }, [notifications]);
 
   // Generate suggestions based on input (live API with debounce)
@@ -48,7 +51,26 @@ const Header = () => {
 
     const delayDebounce = setTimeout(async () => {
       try {
-        // Use activeInstance as base URL so suggestions work in production too
+        // 1. Direct YouTube suggestions proxy
+        const ytRes = await fetch(`/yt-suggest?client=youtube&ds=yt&hl=vi&gl=VN&q=${encodeURIComponent(inputVal)}`);
+        if (ytRes.ok) {
+          const text = await ytRes.text();
+          const match = text.match(/window\.google\.ac\.h\((.*)\)/);
+          if (match && match[1]) {
+            const data = JSON.parse(match[1]);
+            if (Array.isArray(data[1]) && data[1].length > 0) {
+              const liveSuggestions = data[1].map(item => Array.isArray(item) ? item[0] : item).filter(Boolean);
+              if (liveSuggestions.length > 0) {
+                setSuggestions(liveSuggestions.slice(0, 10));
+                return;
+              }
+            }
+          }
+        }
+      } catch (e) {}
+
+      try {
+        // 2. Invidious suggestions fallback
         const base = activeInstance || "";
         const response = await fetch(
           `${base}/api/v1/search/suggestions?q=${encodeURIComponent(inputVal)}`
@@ -56,7 +78,7 @@ const Header = () => {
         if (response.ok) {
           const resData = await response.json();
           if (resData && resData.suggestions && resData.suggestions.length > 0) {
-            setSuggestions(resData.suggestions.slice(0, 8));
+            setSuggestions(resData.suggestions.slice(0, 10));
             return;
           }
         }
@@ -226,7 +248,7 @@ const Header = () => {
         <button
           className="icon-btn action-btn"
           aria-label="Tìm kiếm bằng giọng nói"
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => setShowVoiceModal(true)}
           title="Tìm kiếm bằng giọng nói"
           style={{ display: "flex" }}
         >
@@ -332,6 +354,15 @@ const Header = () => {
                   <User size={18} />
                   <span>Kênh của bạn</span>
                 </div>
+                <div className="menu-item" onClick={() => { navigateTo("your-videos"); setShowUserMenu(false); }}>
+                  <Video size={18} />
+                  <span>YouTube Studio (Video của bạn)</span>
+                </div>
+                <div className="menu-item" onClick={() => { setShowLoginModal(true); setShowUserMenu(false); }}>
+                  <User size={18} />
+                  <span>Chuyển đổi tài khoản</span>
+                </div>
+                <hr className="menu-divider" />
                 <div className="menu-item" onClick={() => { logout(); setShowUserMenu(false); navigateTo("home"); }}>
                   <LogOut size={18} />
                   <span>Đăng xuất</span>
@@ -347,7 +378,10 @@ const Header = () => {
         )}
       </div>
 
-
+      {/* Voice Search Modal */}
+      {showVoiceModal && (
+        <VoiceSearchModal onClose={() => setShowVoiceModal(false)} />
+      )}
 
       {/* Google Login Modal */}
       {showLoginModal && (

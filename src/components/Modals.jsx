@@ -8,22 +8,34 @@ import "./components.css";
    ========================================================================== */
 export const ShareModal = ({ video, onClose }) => {
   const [copied, setCopied] = useState(false);
-  const videoUrl = `https://www.youtube.com/watch?v=${video.id}`;
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+  const videoUrl = `${origin}/watch?v=${video.id}`;
 
-  const handleCopy = () => {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(videoUrl).catch(() => {});
-    } else {
-      // Fallback for older browsers
-      const ta = document.createElement("textarea");
-      ta.value = videoUrl;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand("copy");
-      document.body.removeChild(ta);
+  const handleCopy = async () => {
+    let success = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(videoUrl);
+        success = true;
+      }
+    } catch (e) {}
+
+    if (!success) {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = videoUrl;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        ta.style.top = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        success = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch (e) {}
     }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   const shareOptions = [
@@ -679,6 +691,285 @@ export const GoogleLoginModal = ({ onClose }) => {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+};
+
+/* ==========================================================================
+   SAVE TO PLAYLIST MODAL
+   ========================================================================== */
+export const PlaylistModal = ({ video, onClose }) => {
+  const { playlists, createPlaylist, addToPlaylist, removeFromPlaylist, watchLater, toggleWatchLater, currentUser, setShowLoginModal } = useContext(YoutubeContext);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newTitle, setNewTitle] = useState("");
+  const [privacy, setPrivacy] = useState("Công khai");
+
+  if (!currentUser) {
+    return (
+      <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "380px", padding: "24px", textAlign: "center" }}>
+          <h3 style={{ marginBottom: "12px" }}>Bạn muốn lưu video này?</h3>
+          <p style={{ color: "#aaa", fontSize: "14px", marginBottom: "20px" }}>Đăng nhập để thêm video này vào danh sách phát.</p>
+          <button className="google-signin-btn-blue" style={{ margin: "0 auto" }} onClick={() => { onClose(); setShowLoginModal(true); }}>
+            Đăng nhập
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const handleCreate = (e) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+    const pl = createPlaylist(newTitle.trim(), privacy);
+    if (pl && video) {
+      addToPlaylist(pl.id, video);
+    }
+    setNewTitle("");
+    setShowNewForm(false);
+  };
+
+  const isWatchLater = video && watchLater.includes(video.id);
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content playlist-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: "340px", background: "#212121", borderRadius: "12px", padding: "16px", color: "#fff" }}>
+        <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "600" }}>Lưu video vào...</h3>
+          <button className="close-btn" onClick={onClose} style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer" }}>
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="playlist-list-container" style={{ display: "flex", flexDirection: "column", gap: "12px", maxHeight: "240px", overflowY: "auto" }}>
+          {/* Watch later option */}
+          <label style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", fontSize: "14px" }}>
+            <input
+              type="checkbox"
+              checked={isWatchLater}
+              onChange={() => video && toggleWatchLater(video)}
+              style={{ width: "18px", height: "18px", accentColor: "#3ea6ff", cursor: "pointer" }}
+            />
+            <span>Xem sau</span>
+          </label>
+
+          {/* User playlists */}
+          {playlists.map(pl => {
+            const checked = video && pl.videos && pl.videos.some(v => v.id === video.id);
+            return (
+              <label key={pl.id} style={{ display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", fontSize: "14px" }}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => {
+                    if (checked) {
+                      removeFromPlaylist(pl.id, video.id);
+                    } else {
+                      addToPlaylist(pl.id, video);
+                    }
+                  }}
+                  style={{ width: "18px", height: "18px", accentColor: "#3ea6ff", cursor: "pointer" }}
+                />
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pl.title}</span>
+              </label>
+            );
+          })}
+        </div>
+
+        <hr style={{ borderColor: "rgba(255,255,255,0.1)", margin: "16px 0" }} />
+
+        {!showNewForm ? (
+          <button
+            onClick={() => setShowNewForm(true)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              background: "transparent",
+              border: "none",
+              color: "#3ea6ff",
+              fontSize: "14px",
+              fontWeight: "500",
+              cursor: "pointer",
+              padding: "4px 0"
+            }}
+          >
+            <span>+ Tạo danh sách phát mới</span>
+          </button>
+        ) : (
+          <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div>
+              <label style={{ fontSize: "12px", color: "#aaa", display: "block", marginBottom: "4px" }}>Tên</label>
+              <input
+                type="text"
+                placeholder="Nhập tên danh sách phát..."
+                value={newTitle}
+                onChange={e => setNewTitle(e.target.value)}
+                autoFocus
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "#121212",
+                  border: "1px solid #3f3f3f",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "13px"
+                }}
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: "12px", color: "#aaa", display: "block", marginBottom: "4px" }}>Quyền riêng tư</label>
+              <select
+                value={privacy}
+                onChange={e => setPrivacy(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  background: "#121212",
+                  border: "1px solid #3f3f3f",
+                  borderRadius: "6px",
+                  color: "#fff",
+                  fontSize: "13px"
+                }}
+              >
+                <option value="Công khai">Công khai</option>
+                <option value="Không công khai">Không công khai</option>
+                <option value="Riêng tư">Riêng tư</option>
+              </select>
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" }}>
+              <button
+                type="button"
+                onClick={() => setShowNewForm(false)}
+                style={{ background: "transparent", border: "none", color: "#aaa", cursor: "pointer", fontSize: "13px", padding: "6px 12px" }}
+              >
+                Hủy
+              </button>
+              <button
+                type="submit"
+                disabled={!newTitle.trim()}
+                style={{
+                  background: newTitle.trim() ? "#3ea6ff" : "#555",
+                  border: "none",
+                  color: "#0f0f0f",
+                  borderRadius: "18px",
+                  fontWeight: "600",
+                  cursor: newTitle.trim() ? "pointer" : "default",
+                  fontSize: "13px",
+                  padding: "6px 16px"
+                }}
+              >
+                Tạo
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ==========================================================================
+   REPORT MODAL
+   ========================================================================== */
+export const ReportModal = ({ video, onClose }) => {
+  const { showToast } = useContext(YoutubeContext);
+  const [reason, setReason] = useState("Nội dung không phù hợp");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    showToast("Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét video này.");
+    onClose();
+  };
+
+  const reasons = [
+    "Nội dung khiêu dâm hoặc phản cảm",
+    "Nội dung bạo lực hoặc phản cảm",
+    "Nội dung lăng mạ hoặc xúc phạm",
+    "Hành vi quấy rối hoặc bắt nạt",
+    "Hành động nguy hại hoặc nguy hiểm",
+    "Thông tin sai lệch hoặc gây hiểu lầm",
+    "Spam hoặc lừa đảo"
+  ];
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "420px", background: "#212121", borderRadius: "12px", padding: "20px", color: "#fff" }}>
+        <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "16px", fontWeight: "600" }}>Báo cáo vi phạm video</h3>
+          <button className="close-btn" onClick={onClose} style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer" }}>
+            <X size={20} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          {reasons.map((r) => (
+            <label key={r} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "13.5px", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="reportReason"
+                value={r}
+                checked={reason === r}
+                onChange={() => setReason(r)}
+                style={{ accentColor: "#3ea6ff" }}
+              />
+              <span>{r}</span>
+            </label>
+          ))}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+            <button type="button" onClick={onClose} style={{ background: "transparent", border: "none", color: "#aaa", cursor: "pointer", padding: "8px 16px" }}>
+              Hủy
+            </button>
+            <button type="submit" style={{ background: "#3ea6ff", border: "none", color: "#0f0f0f", fontWeight: "600", borderRadius: "18px", padding: "8px 20px", cursor: "pointer" }}>
+              Tiếp tục
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+/* ==========================================================================
+   KEYBOARD SHORTCUTS MODAL
+   ========================================================================== */
+export const KeyboardShortcutsModal = ({ onClose }) => {
+  const shortcuts = [
+    { key: "k / Phím cách", desc: "Phát / Tạm dừng" },
+    { key: "j", desc: "Tua lùi lại 10 giây" },
+    { key: "l", desc: "Tua nhanh 10 giây" },
+    { key: "← / →", desc: "Tua lùi / tiến 5 giây" },
+    { key: "↑ / ↓", desc: "Tăng / Giảm âm lượng" },
+    { key: "m", desc: "Tắt / Bật tiếng" },
+    { key: "f", desc: "Toàn màn hình" },
+    { key: "t", desc: "Chế độ rạp chiếu phim" },
+    { key: "i", desc: "Trình thu nhỏ (Miniplayer)" },
+    { key: "c", desc: "Bật / Tắt phụ đề" },
+    { key: "0 - 9", desc: "Nhảy đến 0% - 90% thời lượng video" },
+    { key: "Shift + >", desc: "Tăng tốc độ phát" },
+    { key: "Shift + <", desc: "Giảm tốc độ phát" },
+    { key: "Shift + N", desc: "Chuyển sang video tiếp theo" },
+  ];
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "480px", background: "#212121", borderRadius: "12px", padding: "24px", color: "#fff" }}>
+        <div className="modal-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <h3 style={{ fontSize: "18px", fontWeight: "600" }}>Phím tắt bàn phím</h3>
+          <button className="close-btn" onClick={onClose} style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer" }}>
+            <X size={20} />
+          </button>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 16px", maxHeight: "360px", overflowY: "auto", paddingRight: "4px" }}>
+          {shortcuts.map((s) => (
+            <div key={s.key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: "6px" }}>
+              <span style={{ color: "#aaa", fontSize: "13px" }}>{s.desc}</span>
+              <kbd style={{ background: "#333", padding: "2px 8px", borderRadius: "4px", fontSize: "12px", fontFamily: "monospace", color: "#fff" }}>
+                {s.key}
+              </kbd>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

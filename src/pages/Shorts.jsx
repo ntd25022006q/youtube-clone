@@ -1,6 +1,7 @@
 import React, { useState, useContext, useEffect, useRef, useCallback } from "react";
-import { ThumbsUp, ThumbsDown, MessageSquare, Share2, MoreVertical, X, Send, ChevronDown, ChevronUp, Play, Pause, Volume2, VolumeX, Heart } from "lucide-react";
-import { YoutubeContext, getFallbackAvatar } from "../context/YoutubeContext";
+import { ThumbsUp, ThumbsDown, MessageSquare, Share2, MoreVertical, X, Send, ChevronDown, ChevronUp, Play, Pause, Volume2, VolumeX, Heart, EyeOff, Flag, FileText } from "lucide-react";
+import { YoutubeContext, getFallbackAvatar, handleThumbnailError } from "../context/YoutubeContext";
+import { ShareModal, ReportModal } from "../components/Modals";
 import "./pages.css";
 
 // Short video search queries to rotate through for variety
@@ -84,7 +85,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCjtmyHIgpDwaLoytITs0QYg",
       name: "Thiên Ý Giải Trí",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=TY"
+      avatar: "https://yt3.googleusercontent.com/1QNTUHDJcsn6sZ6YcB38H7nHYVUpkBI6RReLDgkSETNcixNpKXrdJgTBb5SJvynJgYN_-2kh7A=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -96,7 +97,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCkiIrwp_7IMy50IPhtSv_Bg",
       name: "Ci Đi Đi",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=CDD"
+      avatar: "https://yt3.googleusercontent.com/KoTpzqe8w8tsMA4hXPqImRQcfygtZVlHo4P6onYTaJkzngIypOjkH7eK8xIhvYP95QThmzMK0mw=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -108,7 +109,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCfc97rtLrhbtPq7c3Pg3_3A",
       name: "tiktok hot trend",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=THT"
+      avatar: "https://yt3.googleusercontent.com/rd55gmskadDf3AsMS2IvuSvYJpkdJZUTFpLpWkft1pNTXS_m558-z6wUE8ugL8CLG96VYgyAbYA=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -120,7 +121,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCJWrgybxe6LtHgNr2JQsEJQ",
       name: "Nhạc Trend",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=NT"
+      avatar: "https://yt3.googleusercontent.com/7sfQlGU6KSJ8GmeCV2mLqOUVmPSrbPLZn5Z557Q13ZgkbHzfDBHWvCfU5l0R4bESyp4vY6Pkng=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -132,7 +133,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCdaTEaoJXmjwr1oOFL4-2Og",
       name: "Bún Bò Remix",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=BBR"
+      avatar: "https://yt3.googleusercontent.com/Gy5n4M8vkV7xglGiNBguVJt2MGv-fDIwGtc3ezsJBNyfXDd3cjgn6l3RHPP6vAOEaBtKFY7pHw=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -144,7 +145,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCKRLY9PzqtA7KnbbWo_oFxg",
       name: "Bằng Cường Official",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=BC"
+      avatar: "https://yt3.googleusercontent.com/WodO8tNBn1jVxH4MFkH4n2k2mtJBV3zhnPLSKT3--oR0XOolQJP2OqhSF_TJJwgQJUEmeFSbGA=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -156,7 +157,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCd3n4h9rctQxi9n2cfvHAXA",
       name: "NHẠC HOT THEO TREND",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=NHTT"
+      avatar: "https://yt3.googleusercontent.com/KASZFrx1HfSZspUl-OEk9LAHIxJ7uFOXk7u85o3cygRKFUHGf8odGGuiVMD65U0JO1mSgjGq=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -168,7 +169,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCoTKnE-SE4cdnfxcZyf5pdA",
       name: "M U S I C Phiêu",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=MP"
+      avatar: "https://yt3.googleusercontent.com/cnzsZkbPukVEH73iw3pOJym5_1cjpy460jT7n2o8bO-Cws0bw0VBzkTm0wYhpX2WFRRBa_JxLgI=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -180,7 +181,7 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UC6cXvJobbT_SF171Me2BrVw",
       name: "Âm Nhạc Music",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=ANM"
+      avatar: "https://yt3.googleusercontent.com/Nbr-C-oEZlTAq8jI6GmFPqzvIMq4b2LLIgRw67FyuzT5IdRQj42-IIXC9CsqEyQ7PQ2EMC2A8mY=s240-c-k-c0x00ffffff-no-rj"
     }
   },
   {
@@ -192,12 +193,14 @@ const FALLBACK_SHORTS_DATA = [
     channel: {
       id: "UCtJJ13CdHnvYb-VrZq2BklA",
       name: "VH Media",
-      avatar: "https://api.dicebear.com/7.x/initials/svg?seed=VHM"
+      avatar: "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj"
     }
   }
 ];
 
 const INVIDIOUS_INSTANCES = [
+  "https://y.com.sb",
+  "https://yt.chocolatemoo53.com",
   "https://inv.thepixora.com",
   "https://invidious.projectsegfau.lt",
   "https://yewtu.be",
@@ -242,6 +245,14 @@ const getFallbackShorts = (offset = 0) => {
 const ShortPlayer = ({ videoId, isActive, isMuted, onMuteToggle, onLikeToggle, title }) => {
   const iframeRef = useRef(null);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(false);
+    const safetyTimer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 1200);
+    return () => clearTimeout(safetyTimer);
+  }, [videoId]);
   const [localPlaying, setLocalPlaying] = useState(true);
   const [showPlayPauseIcon, setShowPlayPauseIcon] = useState(null); // 'play' or 'pause' or null
   const [showHeart, setShowHeart] = useState(false);
@@ -336,10 +347,11 @@ const ShortPlayer = ({ videoId, isActive, isMuted, onMuteToggle, onLikeToggle, t
       {!isLoaded && (
         <div className="short-video-placeholder" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1 }}>
           <img 
-            src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`} 
+            src={`https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`} 
             alt={title} 
             className="short-placeholder-thumb"
             style={{ width: "100%", height: "100%", objectFit: "cover", opacity: 0.4, filter: "blur(10px)" }}
+            onError={(e) => handleThumbnailError(e, videoId, title)}
           />
           <div className="spinner" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 40, height: 40 }}></div>
         </div>
@@ -442,14 +454,18 @@ const ShortPlayer = ({ videoId, isActive, isMuted, onMuteToggle, onLikeToggle, t
 };
 
 const Shorts = () => {
-  const { subscriptions, toggleSubscribe, checkAuth, currentUser, activeShortId, setActiveShortId, fetchFromInvidious, isSidebarExpanded, activeInstance } = useContext(YoutubeContext);
-  const [shortsData, setShortsData] = useState([]);
+  const { subscriptions, toggleSubscribe, checkAuth, currentUser, activeShortId, setActiveShortId, fetchFromInvidious, isSidebarExpanded, activeInstance, showToast, handleChannelSelect } = useContext(YoutubeContext);
+  const [shortsData, setShortsData] = useState(() => getFallbackShorts(0));
   const [likedShorts, setLikedShorts] = useState([]);
   const [dislikedShorts, setDislikedShorts] = useState([]);
   const [activeCommentShort, setActiveCommentShort] = useState(null);
+  const [shareModalShort, setShareModalShort] = useState(null);
+  const [reportModalShort, setReportModalShort] = useState(null);
+  const [activeMoreMenuShortId, setActiveMoreMenuShortId] = useState(null);
+  const [showDescriptionShort, setShowDescriptionShort] = useState(null);
   const [newCommentText, setNewCommentText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const seenVideoIds = useRef(new Set());
   const containerRef = useRef(null);
@@ -480,24 +496,10 @@ const Shorts = () => {
           const filtered = (data || [])
             .filter(item => {
               if (item.type !== "video" || !item.videoId) return false;
-              const lengthOk = item.lengthSeconds && item.lengthSeconds > 0 && item.lengthSeconds <= 75;
+              // Allow any video up to 120s or with unspecified duration
+              const lengthOk = !item.lengthSeconds || item.lengthSeconds <= 120;
               const notSeen = !seenVideoIds.current.has(item.videoId);
-              
-              // Filter out Shorts older than 3 months
-              const text = item.publishedText || "";
-              const lower = text.toLowerCase();
-              let under3Months = true;
-              if (lower.includes("year") || lower.includes("năm")) {
-                under3Months = false;
-              } else {
-                const match = lower.match(/(\d+)\s*(month|tháng)/);
-                if (match) {
-                  const months = parseInt(match[1], 10);
-                  under3Months = months <= 3;
-                }
-              }
-              
-              return lengthOk && notSeen && under3Months;
+              return lengthOk && notSeen;
             })
             .map(item => {
               seenVideoIds.current.add(item.videoId);
@@ -537,60 +539,50 @@ const Shorts = () => {
     }
   }, [isLoadingMore, fetchFromInvidious]);
 
-  // Initial load or handle activeShortId transitions
+  // Initial load or handle activeShortId transitions with 0ms instant playback
   useEffect(() => {
     const init = async () => {
       if (activeShortId) {
-        setIsLoading(true);
-        let activeShort = null;
-        try {
-          const { data: details, instance: inst } = await fetchFromInvidious(
-            `/api/v1/videos/${activeShortId}`,
-            (res) => res && res.videoId
-          );
-          activeShort = mapApiItemToShort(details, inst);
-          if (activeShort) {
-            seenVideoIds.current.add(activeShortId);
-          }
-        } catch (e) {
-          console.warn("Failed to fetch active short:", e);
-        }
+        // Immediate instant setup: never show black loading screen
+        const matchFallback = FALLBACK_SHORTS_DATA.find(s => s.videoId === activeShortId);
+        const instantActive = matchFallback || {
+          id: activeShortId,
+          videoId: activeShortId,
+          title: "Video Shorts thịnh hành",
+          channel: {
+            id: "channel_" + activeShortId,
+            name: "Kênh Shorts",
+            avatar: getFallbackAvatar("Shorts")
+          },
+          likes: "180 N",
+          commentsCount: "1,2 N",
+          shares: "35 N"
+        };
 
-        // Fetch remaining shorts
-        let accumulated = [];
-        let attempts = 0;
-        while (accumulated.length < 8 && attempts < 4) {
-          const query = SHORT_QUERIES[queryIndex % SHORT_QUERIES.length] + " #shorts";
-          queryIndex++;
-          attempts++;
-          const randomPage = Math.floor(Math.random() * 2) + 1;
-          try {
-            const { data, instance: inst } = await fetchFromInvidious(
-              `/api/v1/search?q=${encodeURIComponent(query)}&type=video&sort=relevance&duration=short&page=${randomPage}`,
-              (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId)
-            );
-            const filtered = (data || [])
-              .filter(item => item.type === "video" && item.videoId && item.lengthSeconds && item.lengthSeconds > 0 && item.lengthSeconds <= 75 && item.videoId !== activeShortId)
-              .map(item => {
-                seenVideoIds.current.add(item.videoId);
-                return mapApiItemToShort(item, inst);
-              })
-              .filter(Boolean);
-            if (filtered.length > 0) {
-              accumulated = [...accumulated, ...filtered];
-            }
-          } catch (e) {
-            console.warn("Failed to fetch surrounding shorts:", e);
-          }
-        }
-
-        const finalData = activeShort ? [activeShort, ...accumulated] : accumulated;
-        setShortsData(finalData);
+        seenVideoIds.current.add(activeShortId);
+        setShortsData(prev => [instantActive, ...prev.filter(s => s.videoId !== activeShortId)]);
         setCurrentIndex(0);
         setIsLoading(false);
-        setActiveShortId(null); // Clear it
+        setActiveShortId(null);
+
+        // Background parallel metadata enhancement
+        try {
+          const { data: details, instance: inst } = await fetchFromInvidious(`/api/v1/videos/${activeShortId}`);
+          if (details && details.videoId) {
+            const mapped = mapApiItemToShort(details, inst);
+            if (mapped) {
+              setShortsData(prev => prev.map(s => s.videoId === activeShortId ? mapped : s));
+            }
+          }
+        } catch (e) {
+          console.warn("Background active short metadata fetch:", e);
+        }
+
+        // Background fetch additional shorts smoothly
+        fetchShorts(false);
       } else {
-        fetchShorts(true);
+        // Background fetch fresh shorts without blocking initial playback
+        fetchShorts(false);
       }
     };
     init();
@@ -665,9 +657,26 @@ const Shorts = () => {
   // Keyboard navigation
   useEffect(() => {
     const handleKey = (e) => {
-      if (activeCommentShort) return;
-      if (e.key === "ArrowDown") goNext();
-      if (e.key === "ArrowUp") goPrev();
+      if (
+        activeCommentShort ||
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.isContentEditable
+      ) {
+        return;
+      }
+      if (e.key === "ArrowDown" || e.key === "j" || e.key === "J") {
+        e.preventDefault();
+        goNext();
+      }
+      if (e.key === "ArrowUp" || e.key === "k" || e.key === "K") {
+        e.preventDefault();
+        goPrev();
+      }
+      if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        setIsMuted(prev => !prev);
+      }
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
@@ -729,14 +738,14 @@ const Shorts = () => {
   };
 
   const handleShare = (short) => {
-    const url = `https://youtube.com/shorts/${short.videoId}`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-    }
-    alert(`🔗 Đã sao chép liên kết:\n${url}`);
+    setShareModalShort({
+      id: short.videoId,
+      title: short.title,
+      channel: { name: short.channelName }
+    });
   };
 
-  if (isLoading) {
+  if (shortsData.length === 0) {
     return (
       <div className="shorts-page-container" style={{ justifyContent: "center", alignItems: "center" }}>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px", color: "#aaa" }}>
@@ -802,24 +811,7 @@ const Shorts = () => {
         }
       `}</style>
 
-      {/* Floating Scroll Counter Badge */}
-      <div className="short-counter-badge" style={{
-        position: "fixed",
-        top: "72px",
-        left: counterLeft,
-        background: "rgba(15, 15, 15, 0.85)",
-        color: "#fff",
-        padding: "6px 14px",
-        borderRadius: "18px",
-        fontSize: "13px",
-        fontWeight: 600,
-        zIndex: 99,
-        border: "1px solid rgba(255, 255, 255, 0.15)",
-        backdropFilter: "blur(8px)",
-        transition: "left 0.2s ease"
-      }}>
-        <span>{currentIndex + 1}/{shortsData.length} Shorts</span>
-      </div>
+      {/* Floating counter removed for clean YouTube Shorts experience */}
 
       {shortsData.map((short, idx) => {
         const isActive = idx === currentIndex;
@@ -857,10 +849,34 @@ const Shorts = () => {
                     <img
                       src={short.channel.avatar}
                       alt={short.channel.name}
-                      className="short-creator-avatar"
+                      className="short-creator-avatar" referrerPolicy="no-referrer"
+                      style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleChannelSelect({
+                          id: short.channel.id,
+                          name: short.channel.name,
+                          avatar: short.channel.avatar,
+                          handle: getCommentHandle(short.channel.name || short.channel.id)
+                        });
+                      }}
                       onError={e => { e.target.src = getFallbackAvatar(short.channel.name); }}
                     />
-                    <span className="short-creator-name">@{short.channel.id || short.channel.name}</span>
+                    <span 
+                      className="short-creator-name"
+                      style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleChannelSelect({
+                          id: short.channel.id,
+                          name: short.channel.name,
+                          avatar: short.channel.avatar,
+                          handle: getCommentHandle(short.channel.name || short.channel.id)
+                        });
+                      }}
+                    >
+                      {getCommentHandle(short.channel.name || short.channel.id)}
+                    </span>
                     <button
                       className={`short-subscribe-btn ${isSubbed ? "subscribed" : ""}`}
                       onClick={() => toggleSubscribe(short.channel.id)}
@@ -876,11 +892,24 @@ const Shorts = () => {
               {/* Vertical Actions Panel */}
               <div className="short-actions-sidebar">
                 {/* Channel Avatar */}
-                <div className="short-channel-avatar-wrapper" title={short.channel.name}>
+                <div 
+                    className="short-channel-avatar-wrapper" 
+                    title={short.channel.name}
+                    style={{ cursor: "pointer" }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleChannelSelect({
+                        id: short.channel.id,
+                        name: short.channel.name,
+                        avatar: short.channel.avatar,
+                        handle: getCommentHandle(short.channel.name || short.channel.id)
+                      });
+                    }}
+                  >
                   <img
                     src={short.channel.avatar}
                     alt={short.channel.name}
-                    className="short-sidebar-channel-avatar"
+                    className="short-sidebar-channel-avatar" referrerPolicy="no-referrer"
                     onError={e => { e.target.src = getFallbackAvatar(short.channel.name); }}
                   />
                   <button
@@ -939,10 +968,61 @@ const Shorts = () => {
                   <span className="short-action-label">Chia sẻ</span>
                 </div>
 
-                {/* More */}
-                <button className="short-action-circle small-btn" title="Thêm tùy chọn">
-                  <MoreVertical size={20} />
-                </button>
+                {/* More 3-dots */}
+                <div style={{ position: "relative" }}>
+                  <button 
+                    className="short-action-circle small-btn" 
+                    title="Thêm tùy chọn"
+                    onClick={() => setActiveMoreMenuShortId(activeMoreMenuShortId === short.id ? null : short.id)}
+                  >
+                    <MoreVertical size={20} />
+                  </button>
+
+                  {activeMoreMenuShortId === short.id && (
+                    <div 
+                      className="video-card-dropdown" 
+                      style={{ position: "absolute", bottom: "100%", right: 0, marginBottom: "8px", width: "200px", zIndex: 999 }}
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div 
+                        className="video-card-dropdown-item"
+                        onClick={() => {
+                          setShowDescriptionShort(short);
+                          setActiveMoreMenuShortId(null);
+                        }}
+                      >
+                        <FileText size={18} />
+                        <span>Mô tả video</span>
+                      </div>
+
+                      <div 
+                        className="video-card-dropdown-item"
+                        onClick={() => {
+                          setShortsData(prev => prev.filter(s => s.id !== short.id));
+                          showToast("Đã ẩn video Short này");
+                          setActiveMoreMenuShortId(null);
+                        }}
+                      >
+                        <EyeOff size={18} />
+                        <span>Không quan tâm</span>
+                      </div>
+
+                      <div 
+                        className="video-card-dropdown-item"
+                        onClick={() => {
+                          setReportModalShort({
+                            id: short.videoId,
+                            title: short.title
+                          });
+                          setActiveMoreMenuShortId(null);
+                        }}
+                      >
+                        <Flag size={18} />
+                        <span>Báo cáo</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -1010,12 +1090,20 @@ const Shorts = () => {
                       </div>
                       <p className="panel-comment-text">{comment.text}</p>
                       <div className="panel-comment-actions">
-                        <button className="panel-comment-btn-action">
-                          <ThumbsUp size={12} />
-                          <span>{comment.likes > 0 ? formatShortLikes(comment.likes) : ""}</span>
+                        <button
+                          className={`panel-comment-btn-action ${likedShortComments.includes(comment.id) ? "liked" : ""}`}
+                          onClick={() => toggleLikeShortComment(comment.id)}
+                          style={{ color: likedShortComments.includes(comment.id) ? "#3ea6ff" : "inherit", cursor: "pointer" }}
+                        >
+                          <ThumbsUp size={12} fill={likedShortComments.includes(comment.id) ? "currentColor" : "none"} />
+                          <span>{formatShortLikes((comment.likes || 0) + (likedShortComments.includes(comment.id) ? 1 : 0))}</span>
                         </button>
-                        <button className="panel-comment-btn-action">
-                          <ThumbsDown size={12} />
+                        <button
+                          className={`panel-comment-btn-action ${dislikedShortComments.includes(comment.id) ? "disliked" : ""}`}
+                          onClick={() => toggleDislikeShortComment(comment.id)}
+                          style={{ color: dislikedShortComments.includes(comment.id) ? "#3ea6ff" : "inherit", cursor: "pointer" }}
+                        >
+                          <ThumbsDown size={12} fill={dislikedShortComments.includes(comment.id) ? "currentColor" : "none"} />
                         </button>
                       </div>
                     </div>
@@ -1050,6 +1138,33 @@ const Shorts = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Share Modal */}
+      {shareModalShort && (
+        <ShareModal video={shareModalShort} onClose={() => setShareModalShort(null)} />
+      )}
+
+      {/* Report Modal */}
+      {reportModalShort && (
+        <ReportModal video={reportModalShort} onClose={() => setReportModalShort(null)} />
+      )}
+
+      {/* Short Description Modal */}
+      {showDescriptionShort && (
+        <div className="modal-overlay" onClick={() => setShowDescriptionShort(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: "420px", background: "#212121", borderRadius: "12px", padding: "20px", color: "#fff" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+              <h3 style={{ fontSize: "16px", fontWeight: "600" }}>Mô tả</h3>
+              <button onClick={() => setShowDescriptionShort(null)} style={{ background: "transparent", border: "none", color: "#fff", cursor: "pointer" }}>
+                <X size={20} />
+              </button>
+            </div>
+            <p style={{ fontSize: "14px", lineHeight: "1.6", color: "#ddd", whiteSpace: "pre-wrap" }}>
+              {showDescriptionShort.title}
+            </p>
           </div>
         </div>
       )}

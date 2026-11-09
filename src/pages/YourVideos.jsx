@@ -3,10 +3,23 @@ import { YoutubeContext } from "../context/YoutubeContext";
 import VideoCard from "../components/VideoCard";
 import "./pages.css";
 
-const YourVideos = () => {
-  const { videos, currentUser } = useContext(YoutubeContext);
+import { Film } from "lucide-react";
 
-  if (!currentUser) return null;
+const YourVideos = () => {
+  const { videos, currentUser, setShowLoginModal } = useContext(YoutubeContext);
+
+  if (!currentUser) {
+    return (
+      <div className="your-videos-page-container" style={{ padding: "60px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Film size={64} style={{ opacity: 0.3, marginBottom: "16px" }} />
+        <h2 style={{ fontSize: "20px", fontWeight: "600", marginBottom: "8px" }}>Video của bạn</h2>
+        <p style={{ color: "#aaa", fontSize: "14px", maxWidth: "420px", marginBottom: "20px" }}>Đăng nhập để xem và quản lý tất cả các video bạn đã tải lên.</p>
+        <button className="google-signin-btn-blue" onClick={() => setShowLoginModal(true)}>
+          <span>Đăng nhập</span>
+        </button>
+      </div>
+    );
+  }
 
   // Filter videos that are published by the user
   const userVideos = videos.filter((v) => v.channel && v.channel.name === currentUser.name);
