@@ -1,4 +1,12 @@
-import { searchInnerTube, getWatchInnerTube, getChannelInnerTube, getCommentsInnerTube } from './src/server/innertubeService.js';
+import { 
+  searchInnerTube, 
+  getWatchInnerTube, 
+  getChannelInnerTube, 
+  getCommentsInnerTube,
+  searchWithYoutubei,
+  getVideoWithYoutubei,
+  getChannelWithYoutubei
+} from './src/server/innertubeService.js';
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import https from 'https'
@@ -7,6 +15,65 @@ import https from 'https'
 const apiMiddlewaresPlugin = () => ({
   name: 'api-middlewares',
   configureServer(server) {
+    // Direct youtubei search endpoint (using 'youtubei' library)
+    server.middlewares.use('/api/youtubei/search', async (req, res) => {
+      try {
+        const parsedUrl = new URL(req.url, 'http://localhost');
+        const q = (parsedUrl.searchParams.get('q') || '').trim();
+        if (!q) {
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ success: false, error: 'Empty query' }));
+        }
+        const data = await searchWithYoutubei(q);
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify(data));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+
+    // Direct youtubei video details endpoint (using 'youtubei' library)
+    server.middlewares.use('/api/youtubei/video', async (req, res) => {
+      try {
+        const parsedUrl = new URL(req.url, 'http://localhost');
+        const id = (parsedUrl.searchParams.get('id') || '').trim();
+        if (!id) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ success: false, error: 'Missing video id' }));
+        }
+        const data = await getVideoWithYoutubei(id);
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify(data || { success: false, error: 'Video not found' }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+
+    // Direct youtubei channel endpoint (using 'youtubei' library)
+    server.middlewares.use('/api/youtubei/channel', async (req, res) => {
+      try {
+        const parsedUrl = new URL(req.url, 'http://localhost');
+        const id = (parsedUrl.searchParams.get('id') || '').trim();
+        if (!id) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify({ success: false, error: 'Missing channel id' }));
+        }
+        const data = await getChannelWithYoutubei(id);
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify(data || { success: false, error: 'Channel not found' }));
+      } catch (err) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'application/json');
+        return res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+
     // Direct video download endpoint (streams directly to user machine with Content-Disposition)
     server.middlewares.use('/api/download', async (req, res) => {
       try {

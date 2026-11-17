@@ -1,7 +1,16 @@
 import { Innertube } from 'youtubei.js';
+import { Client as YoutubeiClient } from 'youtubei';
 
 let innertubeInstance = null;
 let initPromise = null;
+let youtubeiClientInstance = null;
+
+export function getYoutubeiClient() {
+  if (!youtubeiClientInstance) {
+    youtubeiClientInstance = new YoutubeiClient();
+  }
+  return youtubeiClientInstance;
+}
 
 export async function getInnertube() {
   if (innertubeInstance) return innertubeInstance;
@@ -221,13 +230,157 @@ export function parseLockupItem(item, fallbackChannel = null) {
   };
 }
 
-// 1. Search endpoint handler
+// Search handler using youtubei library (dual-engine fallback)
+export async function searchWithYoutubei(query) {
+  try {
+    const client = getYoutubeiClient();
+    const res = await client.search(query, { type: 'video' });
+    const videos = [];
+    for (const item of res.items || []) {
+      if (!item || !item.id) continue;
+      const vidId = item.id;
+      const durationSec = typeof item.duration === 'number' ? item.duration : 0;
+      const min = Math.floor(durationSec / 60);
+      const sec = durationSec % 60;
+      const durationStr = durationSec > 0 ? `${min}:${sec < 10 ? '0' : ''}${sec}` : '3:30';
+      const views = item.viewCount ? `${Number(item.viewCount).toLocaleString('vi-VN')} lượt xem` : getDeterministicViewsVi(vidId);
+      const uploadedAt = item.uploadDate || 'Gần đây';
+      const title = item.title || '';
+      const thumb = item.thumbnails?.best || item.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`;
+
+      videos.push({
+        id: vidId,
+        title,
+        thumbnailUrl: thumb,
+        duration: durationStr,
+        views,
+        uploadedAt,
+        channel: {
+          id: item.channel?.id || '',
+          name: item.channel?.name || 'Kênh YouTube',
+          avatar: item.channel?.thumbnails?.best || item.channel?.thumbnails?.[0]?.url || '',
+          isVerified: Boolean(item.channel?.isVerified)
+        }
+      });
+    }
+    return {
+      success: true,
+      query,
+      videos,
+      source: 'youtubei'
+    };
+  } catch (err) {
+    console.warn('searchWithYoutubei error:', err.message);
+    return { success: false, query, videos: [], source: 'youtubei', error: err.message };
+  }
+}
+
+// Video details handler using youtubei library
+export async function getVideoWithYoutubei(videoId) {
+  try {
+    const client = getYoutubeiClient();
+    const vid = await client.getVideo(videoId);
+    if (!vid) return null;
+
+    const durationSec = typeof vid.duration === 'number' ? vid.duration : 0;
+    const min = Math.floor(durationSec / 60);
+    const sec = durationSec % 60;
+    const durationStr = durationSec > 0 ? `${min}:${sec < 10 ? '0' : ''}${sec}` : '3:30';
+
+    return {
+      success: true,
+      id: vid.id,
+      title: vid.title,
+      description: vid.description || '',
+      viewCount: vid.viewCount ? Number(vid.viewCount).toLocaleString('vi-VN') : '',
+      views: vid.viewCount ? `${Number(vid.viewCount).toLocaleString('vi-VN')} lượt xem` : '',
+      uploadDate: vid.uploadDate || 'Gần đây',
+      uploadedAt: vid.uploadDate || 'Gần đây',
+      duration: durationStr,
+      likeCount: vid.likeCount ? String(vid.likeCount) : '',
+      likes: vid.likeCount ? Number(vid.likeCount).toLocaleString('vi-VN') : '',
+      channel: {
+        id: vid.channel?.id || '',
+        name: vid.channel?.name || 'Kênh YouTube',
+        avatar: vid.channel?.thumbnails?.best || vid.channel?.thumbnails?.[0]?.url || '',
+        subscribers: vid.channel?.subscriberCount || '',
+        subscriberCount: vid.channel?.subscriberCount || ''
+      },
+      tags: vid.tags || [],
+      recommendedVideos: [],
+      comments: [],
+      source: 'youtubei'
+    };
+  } catch (err) {
+    console.warn('getVideoWithYoutubei error:', err.message);
+    return null;
+  }
+}
+
+// Channel handler using youtubei library
+export async function getChannelWithYoutubei(channelId) {
+  try {
+    const client = getYoutubeiClient();
+    const ch = await client.getChannel(channelId);
+    if (!ch) return null;
+
+    let vids = [];
+    try {
+      if (ch.videos) {
+        const fetched = await ch.videos.next();
+        vids = (fetched || []).map(v => {
+          const durationSec = typeof v.duration === 'number' ? v.duration : 0;
+          const min = Math.floor(durationSec / 60);
+          const sec = durationSec % 60;
+          return {
+            id: v.id,
+            title: v.title || '',
+            thumbnailUrl: v.thumbnails?.best || v.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,
+            duration: durationSec > 0 ? `${min}:${sec < 10 ? '0' : ''}${sec}` : '3:30',
+            views: v.viewCount ? `${Number(v.viewCount).toLocaleString('vi-VN')} lượt xem` : '',
+            uploadedAt: v.uploadDate || 'Gần đây',
+            channel: {
+              id: ch.id,
+              name: ch.name,
+              avatar: ch.thumbnails?.best || ch.thumbnails?.[0]?.url || ''
+            }
+          };
+        });
+      }
+    } catch (e) {
+      console.warn('getChannelWithYoutubei videos error:', e.message);
+    }
+
+    return {
+      success: true,
+      channel: {
+        id: ch.id,
+        name: ch.name,
+        handle: `@${ch.id}`,
+        subscribers: ch.subscriberCount || '',
+        videoCount: ch.videoCount || '',
+        avatar: ch.thumbnails?.best || ch.thumbnails?.[0]?.url || '',
+        banner: ch.banner?.best || ch.banner?.[0]?.url || '',
+        isVerified: true
+      },
+      videos: vids,
+      source: 'youtubei'
+    };
+  } catch (err) {
+    console.warn('getChannelWithYoutubei error:', err.message);
+    return null;
+  }
+}
+
+// 1. Search endpoint handler (youtubei.js with youtubei dual-engine fallback)
 export async function searchInnerTube(query) {
-  const yt = await getInnertube();
-  const res = await yt.search(query);
   const videos = [];
   let officialCard = null;
   let channelCard = null;
+
+  try {
+    const yt = await getInnertube();
+    const res = await yt.search(query);
 
   for (const item of res.results || []) {
     if (item.type === 'OfficialCardView' && !officialCard) {
@@ -413,85 +566,109 @@ export async function searchInnerTube(query) {
       ]
     };
   }
-
-  return { success: true, officialCard, channelCard, videos };
-}
-
-// 2. Watch endpoint handler (video details, related videos, comments)
-export async function getWatchInnerTube(videoId) {
-  const yt = await getInnertube();
-  const info = await yt.getInfo(videoId);
-  const basic = info.basic_info || {};
-
-  const recommendedVideos = [];
-  for (const rel of info.watch_next_feed || []) {
-    if (rel.type === 'LockupView') {
-      const parsed = parseLockupItem(rel);
-      if (parsed) recommendedVideos.push(parsed);
-    } else if (rel.type === 'CompactVideo' || rel.type === 'Video') {
-      recommendedVideos.push({
-        id: rel.id,
-        title: rel.title?.text || '',
-        thumbnailUrl: rel.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${rel.id}/hqdefault.jpg`,
-        duration: rel.duration?.text || '3:30',
-        views: sanitizeViewsVi(rel.short_view_count?.text || rel.view_count?.text, rel.id),
-        uploadedAt: sanitizeTimeVi(rel.published?.text, rel.id),
-        channel: {
-          id: rel.author?.id || '',
-          name: rel.author?.name || (basic?.author ? basic.author : 'Kênh YouTube'),
-          avatar: rel.author?.thumbnails?.[0]?.url || '',
-          isVerified: rel.author?.is_verified || false
-        }
-      });
+  } catch (innertubeErr) {
+    console.warn('Innertube search error, falling back to youtubei:', innertubeErr.message);
+    const ytFallback = await searchWithYoutubei(query);
+    if (ytFallback && ytFallback.videos && ytFallback.videos.length > 0) {
+      videos.push(...ytFallback.videos);
     }
   }
 
-  const comments = [];
+  // If Innertube returned 0 videos, attempt fallback to youtubei
+  if (videos.length === 0) {
+    const ytFallback = await searchWithYoutubei(query);
+    if (ytFallback && ytFallback.videos && ytFallback.videos.length > 0) {
+      videos.push(...ytFallback.videos);
+    }
+  }
+
+  return { success: true, officialCard, channelCard, videos, engine: 'dual-engine' };
+}
+
+// 2. Watch endpoint handler (video details, related videos, comments with dual-engine fallback)
+export async function getWatchInnerTube(videoId) {
   try {
-    const commentsData = await yt.getComments(videoId);
-    for (const cItem of commentsData.contents || []) {
-      const c = cItem.comment;
-      if (c) {
-        comments.push({
-          id: c.comment_id || String(Math.random()),
-          author: c.author?.name || 'Người dùng',
-          avatar: c.author?.thumbnails?.[0]?.url || '',
-          text: c.content?.text || '',
-          likes: c.vote_count?.text || '0',
-          uploadedAt: c.published?.text || 'Vừa xong'
+    const yt = await getInnertube();
+    const info = await yt.getInfo(videoId);
+    const basic = info.basic_info || {};
+
+    const recommendedVideos = [];
+    for (const rel of info.watch_next_feed || []) {
+      if (rel.type === 'LockupView') {
+        const parsed = parseLockupItem(rel);
+        if (parsed) recommendedVideos.push(parsed);
+      } else if (rel.type === 'CompactVideo' || rel.type === 'Video') {
+        recommendedVideos.push({
+          id: rel.id,
+          title: rel.title?.text || '',
+          thumbnailUrl: rel.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${rel.id}/hqdefault.jpg`,
+          duration: rel.duration?.text || '3:30',
+          views: sanitizeViewsVi(rel.short_view_count?.text || rel.view_count?.text, rel.id),
+          uploadedAt: sanitizeTimeVi(rel.published?.text, rel.id),
+          channel: {
+            id: rel.author?.id || '',
+            name: rel.author?.name || (basic?.author ? basic.author : 'Kênh YouTube'),
+            avatar: rel.author?.thumbnails?.[0]?.url || '',
+            isVerified: rel.author?.is_verified || false
+          }
         });
       }
     }
-  } catch (commErr) {
-    // comments optional
+
+    const comments = [];
+    try {
+      const commentsData = await yt.getComments(videoId);
+      for (const cItem of commentsData.contents || []) {
+        const c = cItem.comment;
+        if (c) {
+          comments.push({
+            id: c.comment_id || String(Math.random()),
+            author: c.author?.name || 'Người dùng',
+            avatar: c.author?.thumbnails?.[0]?.url || '',
+            text: c.content?.text || '',
+            likes: c.vote_count?.text || '0',
+            uploadedAt: c.published?.text || 'Vừa xong'
+          });
+        }
+      }
+    } catch (commErr) {
+      // comments optional
+    }
+
+    const secOwner = info.secondary_info?.owner || info.primary_info?.owner || {};
+    let chAvatar = secOwner.author?.thumbnails?.[0]?.url 
+      || secOwner.avatar?.thumbnails?.[0]?.url 
+      || secOwner.thumbnails?.[0]?.url 
+      || basic.channel?.avatar?.[0]?.url
+      || '';
+    if (chAvatar && chAvatar.startsWith('//')) chAvatar = `https:${chAvatar}`;
+    const chSubs = secOwner.subscriber_count?.text || (basic.channel?.subscriber_count ? `${basic.channel.subscriber_count} người đăng ký` : '');
+
+    return {
+      success: true,
+      title: basic.title || '',
+      description: basic.short_description || '',
+      views: basic.view_count ? `${Number(basic.view_count).toLocaleString('vi-VN')} lượt xem` : getDeterministicViewsVi(videoId),
+      uploadedAt: sanitizeTimeVi(info.primary_info?.published?.text || info.primary_info?.relative_date?.text, videoId),
+      likeCount: info.primary_info?.menu?.top_level_buttons?.[0]?.like_button?.like_count_entity?.like_count_if_liked || '123K',
+      likes: '123K',
+      channel: {
+        id: secOwner.author?.id || basic.channel?.id || '',
+        name: secOwner.author?.name || basic.author || 'Kênh YouTube',
+        avatar: chAvatar,
+        subscribers: chSubs,
+        isVerified: Boolean(secOwner.author?.is_verified || basic.author_is_verified)
+      },
+      recommendedVideos,
+      comments,
+      source: 'youtubei.js'
+    };
+  } catch (err) {
+    console.warn('getWatchInnerTube error, falling back to youtubei:', err.message);
+    const ytFallback = await getVideoWithYoutubei(videoId);
+    if (ytFallback) return ytFallback;
+    throw err;
   }
-
-  const secOwner = info.secondary_info?.owner || info.primary_info?.owner || {};
-  let chAvatar = secOwner.author?.thumbnails?.[0]?.url 
-    || secOwner.avatar?.thumbnails?.[0]?.url 
-    || secOwner.thumbnails?.[0]?.url 
-    || basic.channel?.avatar?.[0]?.url
-    || '';
-  if (chAvatar && chAvatar.startsWith('//')) chAvatar = `https:${chAvatar}`;
-  const chSubs = secOwner.subscriber_count?.text || (basic.channel?.subscriber_count ? `${basic.channel.subscriber_count} người đăng ký` : '');
-
-  return {
-    success: true,
-    title: basic.title || '',
-    views: basic.view_count ? `${Number(basic.view_count).toLocaleString('vi-VN')} lượt xem` : 'Nhiều lượt xem',
-    date: basic.publish_date || 'Gần đây',
-    likes: basic.like_count ? `${Number(basic.like_count).toLocaleString('vi-VN')}` : 'Thích',
-    description: basic.short_description || '',
-    channel: {
-      name: basic.author || '',
-      id: basic.channel_id || '',
-      subscribers: chSubs,
-      avatar: chAvatar,
-      isVerified: true
-    },
-    recommendedVideos,
-    comments
-  };
 }
 
 // 2b. Standalone comments endpoint handler
@@ -532,8 +709,9 @@ export async function getChannelInnerTube(handleOrId) {
   if (cached && (Date.now() - cached.timestamp < CACHE_TTL)) {
     return cached.data;
   }
-  const yt = await getInnertube();
-  let browseId = handleOrId;
+  try {
+    const yt = await getInnertube();
+    let browseId = handleOrId;
 
   const PREDEFINED_CHANNELS = {
     'sontung': 'UClyA28-01x4z60eWQ2kiNbA',
@@ -1326,4 +1504,10 @@ export async function getChannelInnerTube(handleOrId) {
   if (channelObj.handle) channelMemoryCache.set(channelObj.handle.toLowerCase(), { data: result, timestamp: Date.now() });
 
   return result;
+  } catch (err) {
+    console.warn('getChannelInnerTube error, falling back to youtubei:', err.message);
+    const ytFallback = await getChannelWithYoutubei(handleOrId);
+    if (ytFallback) return ytFallback;
+    throw err;
+  }
 }
