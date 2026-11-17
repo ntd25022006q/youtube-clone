@@ -268,10 +268,24 @@ const VideoDetail = () => {
     };
   }, [showSettingsMenu]);
 
+const getPlayableVideoId = (rawId = '') => {
+  if (!rawId) return 'abPmZCZZrFA';
+  let s = String(rawId).trim();
+  if (s.startsWith('RD') && s.length >= 13) {
+    const cand = s.slice(2, 13);
+    if (/^[a-zA-Z0-9_-]{11}$/.test(cand)) return cand;
+  }
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  const m = s.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  return s.replace(/^short_(?:api_)?/, '');
+};
+
   // Track active video ID in a ref so we can read it inside player initialization without re-triggering it
-  const activeVideoIdRef = useRef(activeVideo?.id);
+  const playableId = getPlayableVideoId(activeVideo?.id);
+  const activeVideoIdRef = useRef(playableId);
   useEffect(() => {
-    activeVideoIdRef.current = activeVideo?.id;
+    activeVideoIdRef.current = getPlayableVideoId(activeVideo?.id);
   }, [activeVideo?.id]);
 
   // ---- Derived state ----
@@ -1560,9 +1574,9 @@ const VideoDetail = () => {
               </>
             ) : (
               <iframe
-                key={currentVideoState.id}
+                key={playableId}
                 className="video-iframe"
-                src={`https://www.youtube-nocookie.com/embed/${currentVideoState.id}?autoplay=1&hl=vi&cc_lang_pref=vi&cc_load_policy=1&enablejsapi=1`}
+                src={`https://www.youtube-nocookie.com/embed/${playableId}?autoplay=1&hl=vi&cc_lang_pref=vi&cc_load_policy=1&enablejsapi=1`}
                 title={currentVideoState.title}
                 style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: "none", borderRadius: "12px" }}
                 allow="autoplay; encrypted-media"

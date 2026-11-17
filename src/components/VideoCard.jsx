@@ -53,6 +53,19 @@ const getSafeDeterministicThumbnail = (id = "", title = "") => {
   return SAFE_FALLBACK_THUMBNAILS[index];
 };
 
+const getPlayableVideoId = (rawId = '') => {
+  if (!rawId) return 'abPmZCZZrFA';
+  let s = String(rawId).trim();
+  if (s.startsWith('RD') && s.length >= 13) {
+    const cand = s.slice(2, 13);
+    if (/^[a-zA-Z0-9_-]{11}$/.test(cand)) return cand;
+  }
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  const m = s.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+  if (m) return m[1];
+  return s.replace(/^short_(?:api_)?/, '');
+};
+
 const VideoCard = ({ video }) => {
   const { 
     handleVideoSelect, 
@@ -189,6 +202,7 @@ const VideoCard = ({ video }) => {
 
   const isSavedWatchLater = watchLater && watchLater.includes(video.id);
   const isLive = Boolean(video.isLive || (video.title && (video.title.includes("TRỰC TIẾP") || video.title.includes("Trực tiếp") || video.title.includes("🔴"))) || video.duration === "Trực tiếp");
+  const playableId = getPlayableVideoId(video.id);
 
   const hasSubtitles = Boolean(video.hasSubtitles || video.subtitles || video.hasCaptions);
 
@@ -201,10 +215,10 @@ const VideoCard = ({ video }) => {
         onMouseLeave={handleMouseLeave}
       >
         <div className="thumbnail-container">
-          {isHovered && !isLive && (
+          {isHovered && !isLive && playableId && (
             <>
               <iframe
-                src={`https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&start=5`}
+                src={`https://www.youtube-nocookie.com/embed/${playableId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&start=5`}
                 title={video.title}
                 className="video-hover-preview"
                 allow="autoplay; encrypted-media"

@@ -74,12 +74,20 @@ export function sanitizeTimeVi(rawTime, idFallback = '') {
 
 export function parseLockupItem(item, fallbackChannel = null) {
   if (!item) return null;
-  const vidId = item.content_id || item.id;
-  if (!vidId) return null;
+  const rawId = item.content_id || item.id;
+  if (!rawId) return null;
+
+  // Handle playlist mix ID like RDabPmZCZZrFA
+  let vidId = rawId;
+  let isPlaylist = item.content_type === 'PLAYLIST' || rawId.startsWith('PL') || rawId.startsWith('OLAK') || rawId.startsWith('UU') || rawId.startsWith('RD');
+  if (rawId.startsWith('RD') && rawId.length >= 13) {
+    const candidate = rawId.slice(2, 13);
+    if (/^[a-zA-Z0-9_-]{11}$/.test(candidate)) vidId = candidate;
+  }
 
   // Handle Channel Cards in shelves (e.g. "Kênh của Khoai" / GridChannel)
   if (item.type === 'GridChannel' || item.type === 'Channel') {
-    const chTitle = item.author?.name || item.title?.text || item.title || 'Kênh YouTube';
+    const chTitle = item.author?.name || item.title?.text || item.title || 'V-Trending Music';
     let chAvatar = item.author?.thumbnails?.[0]?.url || item.thumbnails?.[0]?.url || '';
     if (chAvatar && chAvatar.startsWith('//')) chAvatar = `https:${chAvatar}`;
     const chSubs = item.subscribers?.text || 'Nhiều người đăng ký';
@@ -95,7 +103,7 @@ export function parseLockupItem(item, fallbackChannel = null) {
       channel: {
         id: vidId,
         name: chTitle,
-        avatar: chAvatar || fallbackChannel?.avatar || '',
+        avatar: chAvatar || fallbackChannel?.avatar || 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj',
         isVerified: true
       }
     };
@@ -111,8 +119,8 @@ export function parseLockupItem(item, fallbackChannel = null) {
   if (rows.length > 0) {
     for (const row of rows) {
       for (const part of row?.metadata_parts || []) {
-        const txt = (part?.text?.text || '').trim();
-        if (!txt || txt === '•' || txt === '·' || txt === '.' || txt === '|' || txt.length > 35) continue;
+        const txt = (part?.text?.text || part?.text?.content || '').trim();
+        if (!txt || txt === '•' || txt === '·' || txt === '.' || txt === '|' || txt.length > 45) continue;
         if (!views && (txt.includes('lượt xem') || /\b\d+([.,]\d+)?\s*(Tr|N|B|M|K)\b/i.test(txt) || (/^\d+([.,]\d+)?\b/.test(txt) && !txt.includes('trước') && !txt.includes(':')))) {
           views = txt.includes('lượt xem') ? txt : `${txt} lượt xem`;
           continue;
@@ -121,29 +129,50 @@ export function parseLockupItem(item, fallbackChannel = null) {
           uploadedAt = txt;
           continue;
         }
-        if (!channelName && !views && !uploadedAt && txt.length <= 60) {
+        if (!channelName && !txt.includes('lượt xem') && !txt.includes('trước')) {
           channelName = txt;
+          channelId = part?.text?.endpoint?.payload?.browseId || part?.text?.runs?.[0]?.navigationEndpoint?.browseEndpoint?.browseId || '';
         }
       }
     }
   }
 
-  let avatar = item.metadata?.image?.avatar?.image?.[0]?.url || '';
+  let avatar = item.metadata?.image?.avatar?.image?.[0]?.url || item.author?.thumbnails?.[0]?.url || '';
   if (avatar && avatar.startsWith('//')) avatar = `https:${avatar}`;
-  channelId = item.metadata?.image?.renderer_context?.command_context?.on_tap?.payload?.browseId || '';
+  channelId = channelId || item.metadata?.image?.renderer_context?.command_context?.on_tap?.payload?.browseId || item.author?.id || '';
 
   // Smart channel deduction from video title if channel name is missing or generic
   const titleLower = (title || '').toLowerCase();
-  let deducedName = channelName || fallbackChannel?.name || '';
+  let deducedName = channelName || item.author?.name || fallbackChannel?.name || '';
   let deducedAvatar = avatar || fallbackChannel?.avatar || '';
   let deducedId = channelId || fallbackChannel?.id || '';
   let isVerified = Boolean(item.metadata?.title?.badge || item.author?.is_verified);
 
-  if (!deducedName || deducedName === 'Kênh YouTube' || deducedName === 'Kênh' || deducedName === 'YouTube') {
+  if (!deducedName || deducedName === 'Kênh YouTube' || deducedName === 'Kênh' || deducedName === 'YouTube' || deducedName === 'Danh sách phát' || deducedName === 'Tuyển tập') {
     if (title.includes('VTV24') || titleLower.includes('vtv24') || titleLower.includes('thời sự toàn cảnh') || titleLower.includes('chuyển động 24h') || titleLower.includes('cụm tin quốc tế') || titleLower.includes('bản tin sáng')) {
       deducedName = 'VTV24';
       deducedId = 'UCabsTV34JwALXKGMqHpvUiA';
       deducedAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else if (titleLower.includes('tiền phong')) {
+      deducedName = 'Báo Tiền Phong News';
+      deducedAvatar = 'https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else if (titleLower.includes('tuổi trẻ')) {
+      deducedName = 'Báo Tuổi Trẻ';
+      deducedAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else if (titleLower.includes('thanh niên')) {
+      deducedName = 'Báo Thanh Niên';
+      deducedAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else if (titleLower.includes('htv') || titleLower.includes('60 giây')) {
+      deducedName = 'HTV Tin Tức';
+      deducedAvatar = 'https://yt3.ggpht.com/DdueFQ07aLXxotUIojrWewj5DxIflFDm0siM9OwGZX1WYzuPj5aO0uckZe-Q5fJ51hQOQ0p-=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else if (titleLower.includes('nhân dân')) {
+      deducedName = 'Báo Nhân Dân';
+      deducedAvatar = 'https://yt3.ggpht.com/5OIJvVRXzqAnQ_sedopwYdV4aoIx8arbuLXsDOJPm8KnrqMegf0ofLxlNxBi8qj8g8k8RdZj9Q=s240-c-k-c0x00ffffff-no-rj';
       isVerified = true;
     } else if (titleLower.includes('sơn tùng') || titleLower.includes('sontung') || titleLower.includes('m-tp')) {
       deducedName = 'Sơn Tùng M-TP Official';
@@ -160,6 +189,13 @@ export function parseLockupItem(item, fallbackChannel = null) {
       deducedId = 'UCst319';
       deducedAvatar = 'https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj';
       isVerified = true;
+    } else if (titleLower.includes('lofi') || titleLower.includes('chill') || titleLower.includes('remix') || titleLower.includes('tiktok') || titleLower.includes('danh sách kết hợp') || titleLower.includes('tuyển tập')) {
+      deducedName = 'Lofi Bầu Trời Nhạc';
+      deducedAvatar = 'https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else {
+      deducedName = 'V-Trending Music';
+      deducedAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
     }
   }
 
@@ -171,8 +207,6 @@ export function parseLockupItem(item, fallbackChannel = null) {
     isVerified = true;
   }
 
-  // Handle Playlists vs Videos
-  const isPlaylist = item.content_type === 'PLAYLIST' || vidId.startsWith('PL') || vidId.startsWith('OLAK') || vidId.startsWith('UU');
   const firstVidId = item.renderer_context?.command_context?.on_tap?.payload?.videoId;
 
   let thumb = item.content_image?.primary_thumbnail?.image?.[0]?.url
@@ -181,17 +215,11 @@ export function parseLockupItem(item, fallbackChannel = null) {
     || item.content_image?.image?.[0]?.url
     || item.thumbnail?.[0]?.url
     || item.thumbnails?.[0]?.url
-    || (firstVidId ? `https://i.ytimg.com/vi/${firstVidId}/hqdefault.jpg` : '')
-    || (!isPlaylist && vidId.length === 11 ? `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg` : '');
+    || `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`;
 
-  if (!thumb) {
-    if (fallbackChannel?.banner) thumb = fallbackChannel.banner;
-    else if (fallbackChannel?.avatar) thumb = fallbackChannel.avatar;
-    else thumb = 'https://i.ytimg.com/vi/yuuWdm5tBD0/hqdefault.jpg';
-  }
   if (thumb && thumb.startsWith('//')) thumb = `https:${thumb}`;
 
-  let duration = isPlaylist ? 'Danh sách phát' : '3:30';
+  let duration = isPlaylist ? 'Tuyển tập' : '3:30';
   const overlays = item.content_image?.primary_thumbnail?.overlays || item.content_image?.overlays || [];
   for (const o of overlays) {
     if (o.type === 'ThumbnailOverlayBadgeView' && o.badges?.[0]?.text) {
@@ -205,10 +233,10 @@ export function parseLockupItem(item, fallbackChannel = null) {
     }
   }
 
-  const finalChannelName = deducedName || (vidId.startsWith('PL') ? 'YouTube' : 'Kênh YouTube');
-  const finalAvatar = deducedAvatar || '';
+  const finalChannelName = deducedName;
+  const finalAvatar = deducedAvatar || 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
   const finalChannelId = deducedId || '';
-  if (/official|sơn tùng|vtv24|mixigaming|khoai lang thang/i.test(finalChannelName)) {
+  if (/official|sơn tùng|vtv24|mixigaming|khoai lang thang|tiền phong/i.test(finalChannelName)) {
     isVerified = true;
   }
 
@@ -217,10 +245,10 @@ export function parseLockupItem(item, fallbackChannel = null) {
     title,
     thumbnailUrl: thumb,
     duration,
-    views: isPlaylist ? (duration || 'Danh sách phát') : sanitizeViewsVi(views, vidId + title),
-    uploadedAt: isPlaylist ? 'Danh sách phát' : sanitizeTimeVi(uploadedAt, vidId + title),
+    views: isPlaylist ? 'Nhiều lượt xem' : sanitizeViewsVi(views, vidId + title),
+    uploadedAt: isPlaylist ? 'Gần đây' : sanitizeTimeVi(uploadedAt, vidId + title),
     isPlaylist: Boolean(isPlaylist),
-    firstVideoId: firstVidId || (isPlaylist ? '' : vidId),
+    firstVideoId: firstVidId || vidId,
     channel: {
       id: finalChannelId,
       name: finalChannelName,
@@ -246,7 +274,38 @@ export async function searchWithYoutubei(query) {
       const views = item.viewCount ? `${Number(item.viewCount).toLocaleString('vi-VN')} lượt xem` : getDeterministicViewsVi(vidId);
       const uploadedAt = item.uploadDate || 'Gần đây';
       const title = item.title || '';
+      const titleLower = title.toLowerCase();
       const thumb = item.thumbnails?.best || item.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`;
+
+      let chName = (item.channel?.name || '').trim();
+      let chAvatar = item.channel?.thumbnails?.best || item.channel?.thumbnails?.[0]?.url || '';
+      let chId = item.channel?.id || '';
+
+      if (!chName || chName === 'Kênh YouTube' || chName === 'Kênh' || chName === 'YouTube') {
+        if (title.includes('VTV24') || titleLower.includes('vtv24') || titleLower.includes('thời sự') || titleLower.includes('chuyển động 24h')) {
+          chName = 'VTV24';
+          chAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+        } else if (titleLower.includes('tiền phong')) {
+          chName = 'Báo Tiền Phong News';
+          chAvatar = 'https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj';
+        } else if (titleLower.includes('sơn tùng') || titleLower.includes('m-tp')) {
+          chName = 'Sơn Tùng M-TP Official';
+          chAvatar = 'https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s900-c-k-c0x00ffffff-no-rj';
+        } else if (titleLower.includes('mixi')) {
+          chName = 'MixiGaming';
+          chAvatar = 'https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj';
+        } else if (titleLower.includes('lofi') || titleLower.includes('chill') || titleLower.includes('remix') || titleLower.includes('tiktok') || titleLower.includes('nhạc trẻ')) {
+          chName = 'Lofi Bầu Trời Nhạc';
+          chAvatar = 'https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj';
+        } else {
+          chName = 'V-Trending Music';
+          chAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+        }
+      }
+
+      if (!chAvatar) {
+        chAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+      }
 
       videos.push({
         id: vidId,
@@ -256,9 +315,9 @@ export async function searchWithYoutubei(query) {
         views,
         uploadedAt,
         channel: {
-          id: item.channel?.id || '',
-          name: item.channel?.name || 'Kênh YouTube',
-          avatar: item.channel?.thumbnails?.best || item.channel?.thumbnails?.[0]?.url || '',
+          id: chId,
+          name: chName,
+          avatar: chAvatar,
           isVerified: Boolean(item.channel?.isVerified)
         }
       });
@@ -497,18 +556,59 @@ export async function searchInnerTube(query) {
         }
       }
     } else if (item.type === 'Video') {
+      const vTitle = item.title?.text || '';
+      const vTitleLower = vTitle.toLowerCase();
+      let authorName = (item.author?.name || item.author?.text || '').trim();
+      let authorAvatar = item.author?.thumbnails?.[0]?.url || '';
+      let authorId = item.author?.id || '';
+
+      if (!authorName || authorName === 'Kênh YouTube' || authorName === 'Kênh' || authorName === 'YouTube') {
+        if (vTitle.includes('VTV24') || vTitleLower.includes('vtv24') || vTitleLower.includes('thời sự') || vTitleLower.includes('chuyển động 24h')) {
+          authorName = 'VTV24';
+          authorAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+        } else if (vTitleLower.includes('tiền phong')) {
+          authorName = 'Báo Tiền Phong News';
+          authorAvatar = 'https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj';
+        } else if (vTitleLower.includes('tuổi trẻ')) {
+          authorName = 'Báo Tuổi Trẻ';
+          authorAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+        } else if (vTitleLower.includes('thanh niên')) {
+          authorName = 'Báo Thanh Niên';
+          authorAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+        } else if (vTitleLower.includes('htv')) {
+          authorName = 'HTV Tin Tức';
+          authorAvatar = 'https://yt3.ggpht.com/DdueFQ07aLXxotUIojrWewj5DxIflFDm0siM9OwGZX1WYzuPj5aO0uckZe-Q5fJ51hQOQ0p-=s240-c-k-c0x00ffffff-no-rj';
+        } else if (vTitleLower.includes('sơn tùng') || vTitleLower.includes('m-tp')) {
+          authorName = 'Sơn Tùng M-TP Official';
+          authorAvatar = 'https://yt3.googleusercontent.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s900-c-k-c0x00ffffff-no-rj';
+        } else if (vTitleLower.includes('mixi')) {
+          authorName = 'MixiGaming';
+          authorAvatar = 'https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj';
+        } else if (vTitleLower.includes('lofi') || vTitleLower.includes('chill') || vTitleLower.includes('remix') || vTitleLower.includes('tiktok') || vTitleLower.includes('nhạc trẻ')) {
+          authorName = 'Lofi Bầu Trời Nhạc';
+          authorAvatar = 'https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj';
+        } else {
+          authorName = 'V-Trending Music';
+          authorAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+        }
+      }
+
+      if (!authorAvatar) {
+        authorAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+      }
+
       videos.push({
         id: item.id,
-        title: item.title?.text || '',
+        title: vTitle,
         thumbnailUrl: item.thumbnails?.[0]?.url || `https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`,
         duration: item.duration?.text || '3:30',
         views: sanitizeViewsVi(item.view_count?.text || item.short_view_count?.text, item.id),
         uploadedAt: sanitizeTimeVi(item.published?.text, item.id),
         channel: {
-          id: item.author?.id || '',
-          name: item.author?.name || 'Kênh YouTube',
-          avatar: item.author?.thumbnails?.[0]?.url || '',
-          isVerified: item.author?.is_verified || false
+          id: authorId || '',
+          name: authorName,
+          avatar: authorAvatar,
+          isVerified: item.author?.is_verified ?? true
         }
       });
     } else if (item.type === 'Channel' && !channelCard) {
