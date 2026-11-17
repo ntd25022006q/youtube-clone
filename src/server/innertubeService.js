@@ -58,17 +58,27 @@ export function sanitizeViewsVi(rawViews, idFallback = '') {
   if (!rawViews) return getDeterministicViewsVi(idFallback);
   let v = String(rawViews).replace(/[\u00A0\s]+/g, ' ').trim();
   if (!v || v === 'Nhiều lượt xem' || v === '•' || v === '.') return getDeterministicViewsVi(idFallback);
-  v = v.replace(/(lượt\s*xem\s*)+/gi, 'lượt xem');
-  if (!/lượt\s*xem/i.test(v)) {
-    v = `${v} lượt xem`;
-  }
-  return v;
+  v = v.replace(/(lượt\s*xem\s*)+/gi, '').trim();
+  return `${v} lượt xem`;
 }
 
 export function sanitizeTimeVi(rawTime, idFallback = '') {
   if (!rawTime) return getDeterministicRelativeTime(idFallback);
   let t = String(rawTime).replace(/[\u00A0\s]+/g, ' ').trim();
-  if (!t || t === 'Gần đây' || t === '•' || t === '.' || t.length > 35) return getDeterministicRelativeTime(idFallback);
+  if (!t || t === 'Gần đây' || t === '•' || t === '.' || t.length > 40) return getDeterministicRelativeTime(idFallback);
+  t = t.replace(/\s*\(đã chỉnh sửa\)/i, '')
+       .replace(/\s*\(edited\)/i, '')
+       .replace(/seconds?\s*ago/i, 'giây trước')
+       .replace(/minutes?\s*ago/i, 'phút trước')
+       .replace(/hours?\s*ago/i, 'giờ trước')
+       .replace(/days?\s*ago/i, 'ngày trước')
+       .replace(/weeks?\s*ago/i, 'tuần trước')
+       .replace(/months?\s*ago/i, 'tháng trước')
+       .replace(/years?\s*ago/i, 'năm trước')
+       .replace(/ago/i, 'trước')
+       .replace(/just now/i, 'Vừa xong')
+       .replace(/recently/i, getDeterministicRelativeTime(idFallback));
+  if (t === 'trước' || t === 'Gần đây' || !t) return getDeterministicRelativeTime(idFallback);
   return t;
 }
 
@@ -76,7 +86,7 @@ export const DEFAULT_NEUTRAL_AVATAR = 'https://yt3.ggpht.com/a/default-user=s240
 
 export function parseLockupItem(item, fallbackChannel = null) {
   if (!item) return null;
-  const rawId = item.content_id || item.id;
+  const rawId = item.content_id || item.id || (item.entity_id ? item.entity_id.replace(/^shorts-shelf-item-/, '') : null) || item.video_id;
   if (!rawId) return null;
 
   // Handle playlist or mix ID
@@ -277,9 +287,19 @@ export function parseLockupItem(item, fallbackChannel = null) {
     || item.content_image?.collection_thumbnail_view_model?.primary_thumbnail?.image?.[0]?.url
     || item.content_image?.thumbnail?.image?.[0]?.url
     || item.content_image?.image?.[0]?.url
+    || item.thumbnail_view_model?.image?.[0]?.url
     || item.thumbnail?.[0]?.url
-    || item.thumbnails?.[0]?.url
-    || (firstVidId ? `https://i.ytimg.com/vi/${firstVidId}/hqdefault.jpg` : `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`);
+    || item.thumbnails?.[0]?.url;
+
+  if (!thumb) {
+    if (firstVidId && /^[a-zA-Z0-9_-]{11}$/.test(firstVidId)) {
+      thumb = `https://i.ytimg.com/vi/${firstVidId}/hqdefault.jpg`;
+    } else if (vidId && /^[a-zA-Z0-9_-]{11}$/.test(vidId)) {
+      thumb = `https://i.ytimg.com/vi/${vidId}/hqdefault.jpg`;
+    } else {
+      thumb = 'https://i.ytimg.com/vi/yuuWdm5tBD0/hqdefault.jpg';
+    }
+  }
 
   if (thumb && thumb.startsWith('//')) thumb = `https:${thumb}`;
 
@@ -328,7 +348,7 @@ export function parseLockupItem(item, fallbackChannel = null) {
     thumbnailUrl: thumb,
     duration,
     views: isPlaylist ? 'Nhiều lượt xem' : sanitizeViewsVi(views, vidId + title),
-    uploadedAt: isPlaylist ? 'Gần đây' : sanitizeTimeVi(uploadedAt, vidId + title),
+    uploadedAt: isPlaylist ? 'Danh sách phát' : sanitizeTimeVi(uploadedAt, vidId + title),
     isPlaylist: Boolean(isPlaylist),
     firstVideoId: firstVidId || vidId,
     channel: {
@@ -876,7 +896,7 @@ export async function getWatchInnerTube(videoId) {
             avatar: c.author?.thumbnails?.[0]?.url || '',
             text: c.content?.text || '',
             likes: c.vote_count?.text || '0',
-            uploadedAt: c.published?.text || 'Vừa xong'
+            uploadedAt: sanitizeTimeVi(c.published_time || c.published?.text || c.published_time_text || '', c.comment_id || c.author?.name || 'comm')
           });
         }
       }
@@ -942,7 +962,7 @@ export async function getCommentsInnerTube(videoId) {
           avatar: authThumb,
           text: c.content?.text || '',
           likes: c.vote_count ? parseInt(String(c.vote_count).replace(/[^0-9]/g, '')) || 0 : 0,
-          uploadedAt: c.published?.text || 'Gần đây',
+          uploadedAt: sanitizeTimeVi(c.published_time || c.published?.text || c.published_time_text || '', c.comment_id || c.author?.name || 'comm'),
           isCreatorHearted: Boolean(c.is_hearted)
         });
       }

@@ -160,12 +160,19 @@ const VideoCard = ({ video }) => {
   const isSpecialId = !video.id || video.id.startsWith('PL') || video.id.startsWith('UC') || video.id.startsWith('release_') || video.id.length !== 11;
   const validExplicitThumb = (video.thumbnailUrl || video.thumbnail || '').trim();
 
+  const SAFE_FALLBACK_THUMB = 'https://i.ytimg.com/vi/yuuWdm5tBD0/hqdefault.jpg';
+
   const getThumbSrc = () => {
-    if (validExplicitThumb && !validExplicitThumb.includes('no_thumbnail.jpg')) {
+    if (thumbStage >= 4) {
+      return SAFE_FALLBACK_THUMB;
+    }
+    if (validExplicitThumb && !validExplicitThumb.includes('no_thumbnail.jpg') && !validExplicitThumb.includes('default-user') && !validExplicitThumb.includes('/vi/UC') && !validExplicitThumb.includes('/vi/@')) {
       if (thumbStage === 0) return validExplicitThumb;
     }
     if (isSpecialId) {
-      return validExplicitThumb || 'https://i.ytimg.com/vi/yuuWdm5tBD0/hqdefault.jpg';
+      return (validExplicitThumb && !validExplicitThumb.includes('/vi/UC') && !validExplicitThumb.includes('/vi/PL') && !validExplicitThumb.includes('/vi/@')) 
+        ? validExplicitThumb 
+        : SAFE_FALLBACK_THUMB;
     }
     if (thumbStage === 0) {
       return `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`;
@@ -176,13 +183,16 @@ const VideoCard = ({ video }) => {
     if (thumbStage === 2) {
       return `https://i.ytimg.com/vi/${video.id}/sddefault.jpg`;
     }
-    return `https://i.ytimg.com/vi/${video.id}/default.jpg`;
+    if (thumbStage === 3) {
+      return `https://i.ytimg.com/vi/${video.id}/default.jpg`;
+    }
+    return SAFE_FALLBACK_THUMB;
   };
 
   const handleThumbError = () => {
     setThumbStage((prev) => {
       const next = prev + 1;
-      if (next >= 3) {
+      if (next >= 4) {
         setThumbLoaded(true);
       }
       return next;
@@ -192,7 +202,7 @@ const VideoCard = ({ video }) => {
   const handleThumbLoad = (e) => {
     // Detect YouTube's 120x90 404 placeholder
     if (e.target.naturalWidth === 120 && e.target.naturalHeight === 90) {
-      handleThumbError();
+      setThumbStage(4);
     } else {
       setThumbLoaded(true);
     }

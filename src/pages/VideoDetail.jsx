@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
 import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, Sparkles, Bookmark, ListFilter, Settings, Volume2, MessageSquare, Gauge, Settings2, Moon, Mic, ChevronDown, ChevronUp, Maximize2, Play, Pause, X, SkipForward, ListPlus, Flag, Keyboard } from "lucide-react";
-import { YoutubeContext, getFallbackAvatar, resolveChannelMetaFromVideo, handleThumbnailError, formatViewsVi, formatSubsVi, KNOWN_CHANNEL_SUBS } from "../context/YoutubeContext";
+import { YoutubeContext, getFallbackAvatar, resolveChannelMetaFromVideo, handleThumbnailError, formatViewsVi, formatSubsVi, KNOWN_CHANNEL_SUBS, translateDateVi } from "../context/YoutubeContext";
 import { ShareModal, PlaylistModal, ReportModal, KeyboardShortcutsModal } from "../components/Modals";
 import "./pages.css";
 
@@ -1955,7 +1955,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
                         <div className="comment-content">
                           <div className="comment-meta">
                             <span className="comment-author">{getCommentHandle(comment.author)}</span>
-                            <span className="comment-time">{comment.uploadedAt}</span>
+                            <span className="comment-time">{translateDateVi(comment.uploadedAt, comment.id || comment.author)}</span>
                           </div>
                           <p className="comment-text">{comment.text}</p>
                           <div className="comment-actions-row">

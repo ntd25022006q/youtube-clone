@@ -102,7 +102,7 @@ export const getFallbackAvatar = (name, channelId = null) => {
   if (channelId && PREDEFINED_AVATARS[channelId]) {
     return PREDEFINED_AVATARS[channelId];
   }
-  if (!name || name === "Channel" || name === "Kênh" || name === "YouTube Creator" || name === "Guest" || name === "User" || name === "Người dùng" || name === "Người dùng YouTube") {
+  if (!name || name === "Channel" || name === "Kênh" || name === "YouTube Creator" || name === "Guest" || name === "User" || name === "Người dùng" || name === "Người dùng YouTube" || name === "Kênh YouTube") {
     return "https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj";
   }
   const clean = name.trim();
@@ -138,8 +138,8 @@ export const getFallbackAvatar = (name, channelId = null) => {
     return "https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj";
   }
 
-  // Universal YouTube neutral profile avatar for any unknown channel
-  return "https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj";
+  // Dynamic creator avatar generator with distinct, vivid colors so channels never appear with the blank blue silhouette
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(clean)}&background=random&color=fff&rounded=true&bold=true&size=240`;
 };
 
 export const PREDEFINED_AVATARS = {
@@ -2760,9 +2760,17 @@ export const YoutubeProvider = ({ children }) => {
     let initialChannelName = (video.channel?.name && video.channel.name !== "Kênh" && video.channel.name !== "Kênh YouTube" && video.channel.name !== "YouTube Creator")
       ? video.channel.name
       : (mockMatch?.channel?.name || "");
-    let initialAvatar = (video.channel?.avatar && !video.channel.avatar.includes("dicebear.com") && !video.channel.avatar.startsWith("data:"))
-      ? video.channel.avatar
-      : (mockMatch?.channel?.avatar || getFallbackAvatar(initialChannelName));
+
+    const resolvedMeta = resolveChannelMetaFromVideo({
+      id: effectiveVidId,
+      title: initialTitle,
+      channel: { name: initialChannelName, id: video.channel?.id, avatar: video.channel?.avatar }
+    });
+    initialChannelName = resolvedMeta.name || initialChannelName;
+    let initialAvatar = resolvedMeta.avatar;
+    if (!initialAvatar || initialAvatar.includes("default-user") || initialAvatar.includes("dicebear")) {
+      initialAvatar = getFallbackAvatar(initialChannelName, video.channel?.id);
+    }
 
     let seed = 0;
     const str = String(effectiveVidId || "default");
