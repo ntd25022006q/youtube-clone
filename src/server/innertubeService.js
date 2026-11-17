@@ -220,10 +220,15 @@ export function parseLockupItem(item, fallbackChannel = null) {
       deducedName = 'Báo Nhân Dân';
       deducedAvatar = 'https://yt3.ggpht.com/5OIJvVRXzqAnQ_sedopwYdV4aoIx8arbuLXsDOJPm8KnrqMegf0ofLxlNxBi8qj8g8k8RdZj9Q=s240-c-k-c0x00ffffff-no-rj';
       isVerified = true;
-    } else if (titleLower.includes('cris devil') || titleLower.includes('crisdevilgamer') || titleLower.includes('người hàng xóm tinh nghịch')) {
+    } else if (titleLower.includes('khoai lang thang') || titleLower.includes('bản phùng') || titleLower.includes('ẩm thực miền tây') || titleLower.includes('hà giang việt nam') || titleLower.includes('khoai lang')) {
+      deducedName = 'Khoai Lang Thang';
+      deducedId = 'UCZE88kYvCKUKjM-G0uc8Duw';
+      deducedAvatar = 'https://yt3.ggpht.com/EFB13mILKGh6KbJnTUayPFRw11s4iKhz6GtpbfTl2AAwmUo0FFB2jbxpOup4j5w0gAhYKyqudR4=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else if (titleLower.includes('cris devil') || titleLower.includes('crisdevilgamer') || titleLower.includes('người hàng xóm tinh nghịch') || titleLower.includes('hàng xóm tinh nghịch')) {
       deducedName = 'Cris Devil Gamer';
-      deducedId = 'UC4sLw1XisL8L_Kx9_v7H0eQ';
-      deducedAvatar = 'https://yt3.googleusercontent.com/-qZbZ_G8r4oq3ckyxSzAjvpQKLtuEnxycedJqI-8bSjnsoqSLpgC6G8qT0uxwbdPqpYasVHOJPI=s240-c-k-c0x00ffffff-no-rj';
+      deducedId = 'UCd0neB_LB1xpwIYDetX2qTg';
+      deducedAvatar = 'https://yt3.ggpht.com/-qZbZ_G8r4oq3ckyxSzAjvpQKLtuEnxycedJqI-8bSjnsoqSLpgC6G8qT0uxwbdPqpYasVHOJPI=s240-c-k-c0x00ffffff-no-rj';
       isVerified = true;
     } else if (titleLower.includes('sơn tùng') || titleLower.includes('sontung') || titleLower.includes('m-tp')) {
       deducedName = 'Sơn Tùng M-TP Official';
@@ -235,11 +240,16 @@ export function parseLockupItem(item, fallbackChannel = null) {
       deducedId = 'UCA_23dkEYToAc37hjSsCnXA';
       deducedAvatar = 'https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj';
       isVerified = true;
-    } else if (titleLower.includes('trang nhung') || titleLower.includes('rap việt')) {
+    } else if (titleLower.includes('rap việt') || titleLower.includes('vie channel') || titleLower.includes('anh trai say hi')) {
+      deducedName = 'Vie Channel - HTV2';
+      deducedId = 'UCkna2OcuN1E6u5I8GVtdkOw';
+      deducedAvatar = 'https://yt3.ggpht.com/XSw7CXmpOaXPx-XtHPt9zY4x7d7sObP25wkj2TyPt1aPtu0qxJFNW4xhinO726k6g_6totkw=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
+    } else if (titleLower.includes('trang nhung')) {
       deducedName = 'Trang Nhung Pham';
-      deducedId = 'UCBLH89h5ovOL4hqTjepeMUg';
-      deducedAvatar = 'https://yt3.googleusercontent.com/G8Zg_0qPXG6ag5iHXaWxFplD52m40g7l7Wa9Owbu1zt2Jnqqs2taeogrkv3K6Pgjzhd5IbFiJMQ=s240-c-k-c0x00ffffff-no-rj';
-      isVerified = false;
+      deducedId = 'UCBjIOhKsheAD-LaLQAks-Sg';
+      deducedAvatar = 'https://yt3.googleusercontent.com/ytc/AIdro_ltqzGXA-koufBMRrrcS3dSOxzZVjY_c4x3ogJdH6JlLvc=s240-c-k-c0x00ffffff-no-rj';
+      isVerified = true;
     } else if (titleLower.includes('st.319') || titleLower.includes('st319')) {
       deducedName = 'ST.319 Entertainment';
       deducedId = 'UCst319';
@@ -640,17 +650,29 @@ export async function searchInnerTube(query) {
       const KNOWN_AUTHORS = {
         'UCotkNLf_Y3jfbLWuSFUCSBQ': { name: 'Báo Tiền Phong News', avatar: 'https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj' },
         'UCabsTV34JwALXKGMqHpvUiA': { name: 'VTV24', avatar: 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj' },
-        'UCBLH89h5ovOL4hqTjepeMUg': { name: 'Trang Nhung Pham', avatar: 'https://yt3.googleusercontent.com/G8Zg_0qPXG6ag5iHXaWxFplD52m40g7l7Wa9Owbu1zt2Jnqqs2taeogrkv3K6Pgjzhd5IbFiJMQ=s240-c-k-c0x00ffffff-no-rj' },
-        'UC4sLw1XisL8L_Kx9_v7H0eQ': { name: 'Cris Devil Gamer', avatar: 'https://yt3.googleusercontent.com/-qZbZ_G8r4oq3ckyxSzAjvpQKLtuEnxycedJqI-8bSjnsoqSLpgC6G8qT0uxwbdPqpYasVHOJPI=s240-c-k-c0x00ffffff-no-rj' },
-        'UC8pC_V_3G4-A4uGvLhV-nfg': { name: 'Khoai Lang Thang', avatar: 'https://yt3.googleusercontent.com/EFB13mILKGh6KbJnTUayPFRw11s4iKhz6GtpbfTl2AAwmUo0FFB2jbxpOup4j5w0gAhYKyqudR4=s240-c-k-c0x00ffffff-no-rj' },
+        'UCZE88kYvCKUKjM-G0uc8Duw': { name: 'Khoai Lang Thang', avatar: 'https://yt3.ggpht.com/EFB13mILKGh6KbJnTUayPFRw11s4iKhz6GtpbfTl2AAwmUo0FFB2jbxpOup4j5w0gAhYKyqudR4=s240-c-k-c0x00ffffff-no-rj' },
+        'UC8pC_V_3G4-A4uGvLhV-nfg': { name: 'Khoai Lang Thang', avatar: 'https://yt3.ggpht.com/EFB13mILKGh6KbJnTUayPFRw11s4iKhz6GtpbfTl2AAwmUo0FFB2jbxpOup4j5w0gAhYKyqudR4=s240-c-k-c0x00ffffff-no-rj' },
+        'UCd0neB_LB1xpwIYDetX2qTg': { name: 'Cris Devil Gamer', avatar: 'https://yt3.ggpht.com/-qZbZ_G8r4oq3ckyxSzAjvpQKLtuEnxycedJqI-8bSjnsoqSLpgC6G8qT0uxwbdPqpYasVHOJPI=s240-c-k-c0x00ffffff-no-rj' },
+        'UC4sLw1XisL8L_Kx9_v7H0eQ': { name: 'Cris Devil Gamer', avatar: 'https://yt3.ggpht.com/-qZbZ_G8r4oq3ckyxSzAjvpQKLtuEnxycedJqI-8bSjnsoqSLpgC6G8qT0uxwbdPqpYasVHOJPI=s240-c-k-c0x00ffffff-no-rj' },
+        'UConnM5zwOP9vG_LPTYbRsAg': { name: 'Lâm Vlog', avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_mrMQ8nwQsLxyCaQsjbiDx3uE62LqCQTqH7S8q2f0XffL0=s240-c-k-c0x00ffffff-no-rj' },
         'UCp7E7g4j8kZ2K-Y_91722zA': { name: 'Lâm Vlog', avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_mrMQ8nwQsLxyCaQsjbiDx3uE62LqCQTqH7S8q2f0XffL0=s240-c-k-c0x00ffffff-no-rj' },
-        'UCvT7fV10o3Tnb1Zl8L0K4yQ': { name: 'Web5ngay', avatar: 'https://yt3.googleusercontent.com/8C1LgYCy4sQq5UL2xOlcfoiOcvkwtD3fstl-q9Vzax7d2bYaIxbDIa3MKNNsZEuKD_ikxOGUhHQ=s240-c-k-c0x00ffffff-no-rj' },
-        'UC7GvC2qJ9Q5h5n2c4K-9r3Q': { name: 'Schannel', avatar: 'https://yt3.googleusercontent.com/skvFNNcZs2ahlshGh9wx4Tih-K2rswja8iKEttDCV92qNoM0YAw54oi25rzcLvz90PU_FF73=s240-c-k-c0x00ffffff-no-rj' },
+        'UCkgjUHB8sdWbmdp39swMrTg': { name: 'Web5ngay', avatar: 'https://yt3.ggpht.com/8C1LgYCy4sQq5UL2xOlcfoiOcvkwtD3fstl-q9Vzax7d2bYaIxbDIa3MKNNsZEuKD_ikxOGUhHQ=s240-c-k-c0x00ffffff-no-rj' },
+        'UCvT7fV10o3Tnb1Zl8L0K4yQ': { name: 'Web5ngay', avatar: 'https://yt3.ggpht.com/8C1LgYCy4sQq5UL2xOlcfoiOcvkwtD3fstl-q9Vzax7d2bYaIxbDIa3MKNNsZEuKD_ikxOGUhHQ=s240-c-k-c0x00ffffff-no-rj' },
+        'UC9Pj0EUibBF295jWHRSDJqg': { name: 'Schannel', avatar: 'https://yt3.ggpht.com/skvFNNcZs2ahlshGh9wx4Tih-K2rswja8iKEttDCV92qNoM0YAw54oi25rzcLvz90PU_FF73=s240-c-k-c0x00ffffff-no-rj' },
+        'UC7GvC2qJ9Q5h5n2c4K-9r3Q': { name: 'Schannel', avatar: 'https://yt3.ggpht.com/skvFNNcZs2ahlshGh9wx4Tih-K2rswja8iKEttDCV92qNoM0YAw54oi25rzcLvz90PU_FF73=s240-c-k-c0x00ffffff-no-rj' },
+        'UC47WI-kZXFf0H_f7pvaNCEQ': { name: 'Báo Tuổi Trẻ', avatar: 'https://yt3.ggpht.com/R1rE9_3YC5vlksPznmgECLH6mwzGBa6vFbp8X_8lG73hqvXKyo3gybzGLl1PR5KMxVERwOVD5DE=s240-c-k-c0x00ffffff-no-rj' },
+        'UCIW9cGgoRuGJnky3K3tbzNg': { name: 'Báo Thanh Niên', avatar: 'https://yt3.ggpht.com/GkT7U75a5se3B66z59JdxPM6fhcoeAEF6_NZJz9y2lymDpdXHq266b2_iZOAsPEPjcD2KrLO=s240-c-k-c0x00ffffff-no-rj' },
         'UCkna2OcuN1E6u5I8GVtdkOw': { name: 'Vie Channel - HTV2', avatar: 'https://yt3.ggpht.com/XSw7CXmpOaXPx-XtHPt9zY4x7d7sObP25wkj2TyPt1aPtu0qxJFNW4xhinO726k6g_6totkw=s240-c-k-c0x00ffffff-no-rj' },
-        'UCb5C7kL2jQG6K1S1sZ1uO4A': { name: 'Hậu Hoàng', avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_moeku1wSJ_5JYElsivgwUBW9jYwk2tsk6dgkop4bCQX9KRj77yp1bZwNyZvBy82WKOMA=s240-c-k-c0x00ffffff-no-rj' },
+        'UCBjIOhKsheAD-LaLQAks-Sg': { name: 'Trang Nhung Pham', avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_ltqzGXA-koufBMRrrcS3dSOxzZVjY_c4x3ogJdH6JlLvc=s240-c-k-c0x00ffffff-no-rj' },
+        'UCBLH89h5ovOL4hqTjepeMUg': { name: 'Trang Nhung Pham', avatar: 'https://yt3.googleusercontent.com/ytc/AIdro_ltqzGXA-koufBMRrrcS3dSOxzZVjY_c4x3ogJdH6JlLvc=s240-c-k-c0x00ffffff-no-rj' },
+        'UCbIZSalhHyz3RNWj2wowzdQ': { name: 'Hậu Hoàng', avatar: 'https://yt3.ggpht.com/MoqW7SC-TYjJCN5s8wKe3oeSjV1fu9Xi2gXfy_d-yuM7wyu9fgG0Q2xDsk-cvsoyatG38M-X=s240-c-k-c0x00ffffff-no-rj' },
+        'UCb5C7kL2jQG6K1S1sZ1uO4A': { name: 'Hậu Hoàng', avatar: 'https://yt3.ggpht.com/MoqW7SC-TYjJCN5s8wKe3oeSjV1fu9Xi2gXfy_d-yuM7wyu9fgG0Q2xDsk-cvsoyatG38M-X=s240-c-k-c0x00ffffff-no-rj' },
+        'UChUJa1JyBc7Lc4orkiNKKQg': { name: 'J97', avatar: 'https://yt3.ggpht.com/4B_pebn_WUWdJsY2aNQ11jarvYaBAqlvm8kJMSR58yCE8ai5o0jWVq1naSLzU9eIMmcwd17UtA=s240-c-k-c0x00ffffff-no-rj' },
         'UCxNguV2lPZ3G87n0PhP0vSw': { name: 'J97', avatar: 'https://yt3.googleusercontent.com/4B_pebn_WUWdJsY2aNQ11jarvYaBAqlvm8kJMSR58yCE8ai5o0jWVq1naSLzU9eIMmcwd17UtA=s240-c-k-c0x00ffffff-no-rj' },
         'UClyA28-01x4z60eWQ2kiNbA': { name: 'Sơn Tùng M-TP Official', avatar: 'https://yt3.ggpht.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s176-c-k-c0x00ffffff-no-rj-mo' },
+        'UCA_23dkEYToAc37hjSsCnXA': { name: 'MixiGaming', avatar: 'https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj' },
         'UCu223oN4S-1_Y28Tf6J_2wA': { name: 'MixiGaming', avatar: 'https://yt3.googleusercontent.com/YaAFWY03ER0DfF77HAyMqNlRxmJiSEDq_I7ZF0MlcgRcVzOhIhZfB8QlwNhAuVXZesi2I2zy=s240-c-k-c0x00ffffff-no-rj' },
+        'UCSnVteUNlhr1SqCjTQx0PDQ': { name: 'ST.319 Entertainment', avatar: 'https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj' },
         'UCst319': { name: 'ST.319 Entertainment', avatar: 'https://yt3.googleusercontent.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj' }
       };
 

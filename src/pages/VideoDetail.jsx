@@ -647,10 +647,8 @@ const getPlayableVideoId = (rawId = '', item = null) => {
           hl: "vi"
         };
 
-        if (playlistId) {
-          playerVars.listType = 'playlist';
-          playerVars.list = playlistId;
-        }
+        // Always play video directly via videoId to avoid playlist embedding blocks (0:00 stall)
+        // Playlist progression is seamlessly managed by activePlaylist state in React
 
         ytPlayer = new window.YT.Player("youtube-player-inner", {
           width: "100%",
@@ -1924,8 +1922,8 @@ const getPlayableVideoId = (rawId = '', item = null) => {
 
           {/* Comment Input */}
           <form className="new-comment-form" onSubmit={handleCommentSubmit}>
-            <img src={currentUser ? currentUser.avatar : getFallbackAvatar("Guest")} alt="avatar"
-              className="comment-user-avatar" onError={e => { e.target.src = getFallbackAvatar("Guest"); }} />
+            <img src={(currentUser?.avatar && !currentUser.avatar.includes("WkRGl") && !currentUser.avatar.includes("default-user")) ? currentUser.avatar : "https://yt3.googleusercontent.com/ytc/AIdro_mrMQ8nwQsLxyCaQsjbiDx3uE62LqCQTqH7S8q2f0XffL0=s240-c-k-c0x00ffffff-no-rj"} alt="avatar"
+              className="comment-user-avatar" onError={e => { e.target.src = "https://yt3.googleusercontent.com/ytc/AIdro_mrMQ8nwQsLxyCaQsjbiDx3uE62LqCQTqH7S8q2f0XffL0=s240-c-k-c0x00ffffff-no-rj"; }} />
             <div className="comment-input-area">
               <input type="text" placeholder="Thêm bình luận..." value={commentText}
                 onChange={e => setCommentText(e.target.value)}
@@ -1987,7 +1985,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
 
                           {replyingCommentId === comment.id && (
                             <form className="comment-reply-form" onSubmit={(e) => handleSubmitReply(e, comment.id)} style={{ display: "flex", gap: "10px", marginTop: "12px", marginBottom: "8px" }}>
-                              <img src={currentUser ? currentUser.avatar : getFallbackAvatar("User")} alt="Avatar" className="reply-avatar" style={{ width: "28px", height: "28px", borderRadius: "50%" }} />
+                              <img src={(currentUser?.avatar && !currentUser.avatar.includes("WkRGl") && !currentUser.avatar.includes("default-user")) ? currentUser.avatar : "https://yt3.googleusercontent.com/ytc/AIdro_mrMQ8nwQsLxyCaQsjbiDx3uE62LqCQTqH7S8q2f0XffL0=s240-c-k-c0x00ffffff-no-rj"} alt="Avatar" className="reply-avatar" style={{ width: "28px", height: "28px", borderRadius: "50%" }} />
                               <div style={{ flex: 1 }}>
                                 <input
                                   type="text"
