@@ -624,7 +624,10 @@ const apiMiddlewaresPlugin = () => ({
           console.warn('InnerTube watch fallback:', innerErr.message);
         }
 
-        const html = await fetchYT(`https://www.youtube.com/watch?v=${videoId}`);
+        const targetUrl = (videoId.startsWith('PL') || videoId.startsWith('OLAK') || videoId.startsWith('UU')) 
+          ? `https://www.youtube.com/playlist?list=${videoId}` 
+          : `https://www.youtube.com/watch?v=${videoId}`;
+        const html = await fetchYT(targetUrl);
         
         let playerRes = null;
         const pm = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});(?:\s*var\s|\s*<\/script>)/s);

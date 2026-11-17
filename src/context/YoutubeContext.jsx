@@ -100,7 +100,7 @@ export const getAuthenticBanner = (chId, name) => {
 
 export const getFallbackAvatar = (name) => {
   if (!name || name === "Channel" || name === "Kênh" || name === "Kênh YouTube" || name === "YouTube Creator" || name === "Guest" || name === "User" || name === "Người dùng" || name === "Người dùng YouTube" || name === "Danh sách phát") {
-    name = "YouTube";
+    return "https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj";
   }
   const clean = name.trim();
   const lower = clean.toLowerCase();
@@ -116,12 +116,12 @@ export const getFallbackAvatar = (name) => {
   if (lower.includes("mixi")) return PREDEFINED_AVATARS["UCu223oN4S-1_Y28Tf6J_2wA"];
   if (lower.includes("ghiền mì gõ")) return PREDEFINED_AVATARS["UCq6ApdQI0roaprMAY1gZTgw"];
   if (lower.includes("wren evans")) return PREDEFINED_AVATARS["UCsppqg4lgYAcpa-VMTE9_8Q"];
-  if (lower.includes("vtv24") || lower.includes("vtv 24") || lower.includes("vtv")) return PREDEFINED_AVATARS["UCabsTV34JwALXKGMqHpvUiA"];
+  if (lower.includes("vtv24") || lower.includes("vtv 24") || lower === "vtv") return PREDEFINED_AVATARS["UCabsTV34JwALXKGMqHpvUiA"];
   if (lower.includes("tiền phong")) return "https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj";
   if (lower.includes("htv")) return "https://yt3.ggpht.com/DdueFQ07aLXxotUIojrWewj5DxIflFDm0siM9OwGZX1WYzuPj5aO0uckZe-Q5fJ51hQOQ0p-=s240-c-k-c0x00ffffff-no-rj";
   if (lower.includes("nhân dân")) return "https://yt3.ggpht.com/5OIJvVRXzqAnQ_sedopwYdV4aoIx8arbuLXsDOJPm8KnrqMegf0ofLxlNxBi8qj8g8k8RdZj9Q=s240-c-k-c0x00ffffff-no-rj";
-  if (lower.includes("tuổi trẻ")) return "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj";
-  if (lower.includes("thanh niên")) return "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj";
+  if (lower.includes("tuổi trẻ")) return "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s240-c-k-c0x00ffffff-no-rj";
+  if (lower.includes("thanh niên")) return "https://yt3.ggpht.com/tKWJdOzoU96QEQfhHQN-jo_ElZmOu6HYXcO-57G7Cg1HKxuWI5QdKu8J6rBrQp96RKG6gBh-2A=s240-c-k-c0x00ffffff-no-rj";
   if (lower.includes("tony phùng") || lower.includes("tony phung")) return "https://yt3.ggpht.com/tKWJdOzoU96QEQfhHQN-jo_ElZmOu6HYXcO-57G7Cg1HKxuWI5QdKu8J6rBrQp96RKG6gBh-2A=s512-c-k-c0x00ffffff-no-rj-mo";
   if (lower.includes("vật vờ") || lower.includes("vat vo")) return "https://yt3.ggpht.com/n14a-jT70m01sW3Y_hQnE_U89_a7V_5b_5_5_5_5=s512-c-k-c0x00ffffff-no-rj-mo";
   if (lower.includes("nga sumo")) return "https://yt3.ggpht.com/Ib0hDZKlfNjeAsulTRSLF91KBj-ICVt7DJ230MWsVp_BeruEgRvjjPgzXy_4Q3iA97o2SxUKMI0=s512-c-k-c0x00ffffff-no-rj-mo";
@@ -133,13 +133,14 @@ export const getFallbackAvatar = (name) => {
   if (lower.includes("lâm vlog")) return PREDEFINED_AVATARS["UCp7E7g4j8kZ2K-Y_91722zA"];
   if (lower.includes("web5ngay")) return PREDEFINED_AVATARS["UCvT7fV10o3Tnb1Zl8L0K4yQ"];
   if (lower.includes("schannel")) return PREDEFINED_AVATARS["UC7GvC2qJ9Q5h5n2c4K-9r3Q"];
+  if (lower.includes("rap việt") || lower.includes("vie channel")) return "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s240-c-k-c0x00ffffff-no-rj";
   if (lower.includes("liên quân") || lower.includes("garena")) return PREDEFINED_AVATARS["UCpnQwjzvDm1MOMtZV2zkVpA"] || "https://yt3.googleusercontent.com/a-/ALV-UjXQ2hD0G-9P9h9p9g9h9g9h9g9h9g9h9g9h9g9h=s240-c-k-c0x00ffffff-no-rj";
   if (lower.includes("lofi") || lower.includes("chill") || lower.includes("nhạc") || lower.includes("tiktok") || lower.includes("danh sách") || lower.includes("remix") || lower.includes("tuyển tập")) {
     return "https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj";
   }
 
-  // Authentic Google CDN YouTube creator profile avatar (never return ugly orange SVG badge)
-  return "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj";
+  // Universal YouTube neutral profile avatar for any unknown / unmapped channel
+  return "https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj";
 };
 
 export const PREDEFINED_AVATARS = {
@@ -196,11 +197,11 @@ export const resolveChannelMetaFromVideo = (video) => {
       isVerified = true;
     } else if (titleLower.includes("tuổi trẻ") || titleLower.includes("tuoi tre")) {
       chName = "Báo Tuổi Trẻ";
-      chAvatar = "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj";
+      chAvatar = "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s240-c-k-c0x00ffffff-no-rj";
       isVerified = true;
     } else if (titleLower.includes("thanh niên") || titleLower.includes("thanh nien")) {
       chName = "Báo Thanh Niên";
-      chAvatar = "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj";
+      chAvatar = "https://yt3.ggpht.com/tKWJdOzoU96QEQfhHQN-jo_ElZmOu6HYXcO-57G7Cg1HKxuWI5QdKu8J6rBrQp96RKG6gBh-2A=s240-c-k-c0x00ffffff-no-rj";
       isVerified = true;
     } else if (titleLower.includes("htv") || titleLower.includes("60 giây")) {
       chName = "HTV Tin Tức";
@@ -231,11 +232,11 @@ export const resolveChannelMetaFromVideo = (video) => {
       isVerified = true;
     } else if (titleLower.includes("anh trai say hi") || titleLower.includes("vie channel")) {
       chName = "Vie Channel - HTV2";
-      chAvatar = "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj";
+      chAvatar = "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s240-c-k-c0x00ffffff-no-rj";
       isVerified = true;
     } else if (titleLower.includes("2 ngày 1 đêm") || titleLower.includes("đông tây")) {
       chName = "ĐÔNG TÂY PROMOTION OFFICIAL";
-      chAvatar = "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj";
+      chAvatar = "https://yt3.googleusercontent.com/ytc/AIdro_kM6pL1hCqFkL1wA=s240-c-k-c0x00ffffff-no-rj";
       isVerified = true;
     } else if (titleLower.includes("rap việt") || titleLower.includes("rap viet")) {
       chName = "Rap Việt Official";
@@ -1148,7 +1149,7 @@ export const DEFAULT_HOME_SHORTS = [
     views: "6,7 Tr",
     likes: 210000,
     commentsCount: 1100,
-    channel: { id: "UCKRLY9PzqtA7KnbbWo_oFxg", name: "Bằng Cường Official", avatar: "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj" }
+    channel: { id: "UCKRLY9PzqtA7KnbbWo_oFxg", name: "Bằng Cường Official", avatar: "https://yt3.googleusercontent.com/ytc/AIdro_ntu868X9o_dYmD321w6Hlye-GZ3f5uV30mEwK5=s240-c-k-c0x00ffffff-no-rj" }
   },
   {
     id: "short_fb_sycAsXYlqOI",
@@ -1273,7 +1274,8 @@ export const YoutubeProvider = ({ children }) => {
   const pushHistoryState = (page, video = null, channel = null, query = "") => {
     let url = "/";
     if (page === "watch" && video) {
-      url = `/watch?v=${video.id}`;
+      const plParam = video.playlistId ? `&list=${encodeURIComponent(video.playlistId)}` : '';
+      url = `/watch?v=${video.id}${plParam}`;
     } else if (page === "channel" && channel) {
       let cleanChId = (channel.id && channel.id !== "undefined" && channel.id !== "null")
         ? channel.id
@@ -1298,7 +1300,9 @@ export const YoutubeProvider = ({ children }) => {
     
     if (path === "/watch") {
       const v = params.get("v");
-      if (v) return { page: "watch", videoId: v };
+      const list = params.get("list");
+      if (v) return { page: "watch", videoId: v, playlistId: list };
+      if (list) return { page: "watch", videoId: list, playlistId: list };
     } else if (path.startsWith("/channel")) {
       const parts = path.split("/").filter(Boolean);
       let id = (parts[1] || params.get("id") || "").trim();
@@ -1324,9 +1328,14 @@ export const YoutubeProvider = ({ children }) => {
   const [isChannelLoading, setIsChannelLoading] = useState(false);
 
   // User session state — always use safeJsonParse to avoid crash on corrupted data
-  const [currentUser, setCurrentUser] = useState(() =>
-    safeJsonParse(localStorage.getItem("yt_user"), null)
-  );
+  const [currentUser, setCurrentUser] = useState(() => {
+    const u = safeJsonParse(localStorage.getItem("yt_user"), null);
+    if (u && u.avatar && u.avatar.includes("WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA") && !u.name?.toLowerCase().includes("vtv24")) {
+      u.avatar = "https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj";
+      try { localStorage.setItem("yt_user", JSON.stringify(u)); } catch (e) {}
+    }
+    return u;
+  });
 
   const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -1336,7 +1345,20 @@ export const YoutubeProvider = ({ children }) => {
       const cached = localStorage.getItem("yt_cached_home_videos");
       if (cached) {
         const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map(v => {
+            if (v && v.channel && v.channel.avatar && v.channel.avatar.includes("WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA") && !v.channel.name?.toLowerCase().includes("vtv24")) {
+              return {
+                ...v,
+                channel: {
+                  ...v.channel,
+                  avatar: "https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj"
+                }
+              };
+            }
+            return v;
+          });
+        }
       }
     } catch (e) {}
     return mockVideos;
@@ -3798,7 +3820,7 @@ export const YoutubeProvider = ({ children }) => {
         views: "6,7 Tr",
         likes: 210000,
         commentsCount: 1100,
-        channel: { id: "UCKRLY9PzqtA7KnbbWo_oFxg", name: "Bằng Cường Official", avatar: "https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj" }
+        channel: { id: "UCKRLY9PzqtA7KnbbWo_oFxg", name: "Bằng Cường Official", avatar: "https://yt3.googleusercontent.com/ytc/AIdro_ntu868X9o_dYmD321w6Hlye-GZ3f5uV30mEwK5=s240-c-k-c0x00ffffff-no-rj" }
       },
       {
         videoId: "sycAsXYlqOI",

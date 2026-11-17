@@ -268,7 +268,7 @@ const VideoDetail = () => {
     };
   }, [showSettingsMenu]);
 
-const getPlayableVideoId = (rawId = '') => {
+const getPlayableVideoId = (rawId = '', item = null) => {
   if (!rawId) return 'abPmZCZZrFA';
   let s = String(rawId).trim();
   if (s.startsWith('RD') && s.length >= 13) {
@@ -278,15 +278,30 @@ const getPlayableVideoId = (rawId = '') => {
   if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
   const m = s.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   if (m) return m[1];
-  return s.replace(/^short_(?:api_)?/, '');
+  if (s.startsWith('PL') || s.startsWith('OLAK') || s.startsWith('UU') || s.startsWith('RD') || s.startsWith('mix_')) {
+    if (item && item.thumbnailUrl) {
+      const tm = item.thumbnailUrl.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
+      if (tm) return tm[1];
+    }
+    if (item && item.firstVideoId && /^[a-zA-Z0-9_-]{11}$/.test(item.firstVideoId)) {
+      return item.firstVideoId;
+    }
+    if (item && item.items && item.items[0]?.id && /^[a-zA-Z0-9_-]{11}$/.test(item.items[0].id)) {
+      return item.items[0].id;
+    }
+    return 'abPmZCZZrFA';
+  }
+  const cleaned = s.replace(/^short_(?:api_)?/, '');
+  if (/^[a-zA-Z0-9_-]{11}$/.test(cleaned)) return cleaned;
+  return 'abPmZCZZrFA';
 };
 
   // Track active video ID in a ref so we can read it inside player initialization without re-triggering it
-  const playableId = getPlayableVideoId(activeVideo?.id);
+  const playableId = getPlayableVideoId(activeVideo?.id, activeVideo);
   const activeVideoIdRef = useRef(playableId);
   useEffect(() => {
-    activeVideoIdRef.current = getPlayableVideoId(activeVideo?.id);
-  }, [activeVideo?.id]);
+    activeVideoIdRef.current = getPlayableVideoId(activeVideo?.id, activeVideo);
+  }, [activeVideo?.id, activeVideo]);
 
   // ---- Derived state ----
   const currentVideoState = activeVideo;
@@ -599,23 +614,34 @@ const getPlayableVideoId = (rawId = '') => {
       playerSlotRef.current.innerHTML = '<div id="youtube-player-inner" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>';
       try {
         console.log("Initializing YouTube Player with video:", activeVideoIdRef.current);
+        const playlistId = activeVideo?.playlistId 
+          || (activeVideo?.id?.startsWith('PL') ? activeVideo.id : null) 
+          || (typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('list') : null);
+
+        const playerVars = { 
+          autoplay: 1, 
+          controls: 0, 
+          modestbranding: 1, 
+          rel: 0, 
+          showinfo: 0, 
+          iv_load_policy: 3, 
+          disablekb: 0, 
+          origin: window.location.origin,
+          cc_load_policy: 1,
+          cc_lang_pref: "vi",
+          hl: "vi"
+        };
+
+        if (playlistId) {
+          playerVars.listType = 'playlist';
+          playerVars.list = playlistId;
+        }
+
         ytPlayer = new window.YT.Player("youtube-player-inner", {
           width: "100%",
           height: "100%",
           videoId: activeVideoIdRef.current,
-          playerVars: { 
-            autoplay: 1, 
-            controls: 0, 
-            modestbranding: 1, 
-            rel: 0, 
-            showinfo: 0, 
-            iv_load_policy: 3, 
-            disablekb: 0, 
-            origin: window.location.origin,
-            cc_load_policy: 1,
-            cc_lang_pref: "vi",
-            hl: "vi"
-          },
+          playerVars,
           events: {
             onReady: (e) => {
               setPlayer(e.target);
