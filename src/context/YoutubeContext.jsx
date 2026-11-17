@@ -128,12 +128,13 @@ export const getFallbackAvatar = (name) => {
   if (lower.includes("trải nghiệm game") || lower.includes("trai nghiem game") || lower.includes("tng")) return "https://yt3.ggpht.com/eAmYTWd8BBUz2UN4rT-dajfb9cCrteWe8cGGIuvRW2JJSNQh8nwZ693UGjIKlgkYggMNCHu5=s512-c-k-c0x00ffffff-no-rj-mo";
   if (lower.includes("faptv")) return PREDEFINED_AVATARS["UC38I78hW-sL2R9n-1g85C3g"];
   if (lower.includes("hậu hoàng")) return PREDEFINED_AVATARS["UCb5C7kL2jQG6K1S1sZ1uO4A"];
-  if (lower.includes("cris devil") || lower.includes("cris gamer")) return PREDEFINED_AVATARS["UC4sLw1XisL8L_Kx9_v7H0eQ"];
+  if (lower.includes("cris devil") || lower.includes("cris gamer") || lower.includes("crisdevilgamer") || lower.includes("hàng xóm tinh nghịch")) return PREDEFINED_AVATARS["UC4sLw1XisL8L_Kx9_v7H0eQ"];
   if (lower.includes("khoai lang")) return PREDEFINED_AVATARS["UC8pC_V_3G4-A4uGvLhV-nfg"];
   if (lower.includes("lâm vlog")) return PREDEFINED_AVATARS["UCp7E7g4j8kZ2K-Y_91722zA"];
   if (lower.includes("web5ngay")) return PREDEFINED_AVATARS["UCvT7fV10o3Tnb1Zl8L0K4yQ"];
   if (lower.includes("schannel")) return PREDEFINED_AVATARS["UC7GvC2qJ9Q5h5n2c4K-9r3Q"];
-  if (lower.includes("rap việt") || lower.includes("vie channel")) return "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s240-c-k-c0x00ffffff-no-rj";
+  if (lower.includes("rap việt") || lower.includes("vie channel")) return PREDEFINED_AVATARS["UCkna2OcuN1E6u5I8GVtdkOw"];
+  if (lower.includes("trang nhung")) return PREDEFINED_AVATARS["UCBLH89h5ovOL4hqTjepeMUg"];
   if (lower.includes("liên quân") || lower.includes("garena")) return PREDEFINED_AVATARS["UCpnQwjzvDm1MOMtZV2zkVpA"] || "https://yt3.googleusercontent.com/a-/ALV-UjXQ2hD0G-9P9h9p9g9h9g9h9g9h9g9h9g9h9g9h=s240-c-k-c0x00ffffff-no-rj";
   if (lower.includes("lofi") || lower.includes("chill") || lower.includes("nhạc") || lower.includes("tiktok") || lower.includes("danh sách") || lower.includes("remix") || lower.includes("tuyển tập")) {
     return "https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj";
@@ -157,13 +158,16 @@ export const PREDEFINED_AVATARS = {
   "UC3QLI0FHwACCaa91Xdpam2A": "https://yt3.ggpht.com/eAmYTWd8BBUz2UN4rT-dajfb9cCrteWe8cGGIuvRW2JJSNQh8nwZ693UGjIKlgkYggMNCHu5=s512-c-k-c0x00ffffff-no-rj-mo", // Trải Nghiệm Game
   "UCGfonn2-sO5-aBYKWzHKKjQ": "https://yt3.ggpht.com/Ib0hDZKlfNjeAsulTRSLF91KBj-ICVt7DJ230MWsVp_BeruEgRvjjPgzXy_4Q3iA97o2SxUKMI0=s512-c-k-c0x00ffffff-no-rj-mo", // Nga Sumo
   "UC38I78hW-sL2R9n-1g85C3g": "https://yt3.googleusercontent.com/OHF3nW8YRX0aMqCbqDDj3Fx6hslfdO-z8l8SaE2IO68o2LN6vAsri2emDt9pypzEaJxE2vBJ=s240-c-k-c0x00ffffff-no-rj", // FAPtv
-  "UCxNguV2lPZ3G87n0PhP0vSw": "https://yt3.googleusercontent.com/ytc/AIdro_ntu868X9o_dYmD321w6Hlye-GZ3f5uV30mEwK5=s240-c-k-c0x00ffffff-no-rj", // J97
-  "UCb5C7kL2jQG6K1S1sZ1uO4A": "https://yt3.googleusercontent.com/ytc/AIdro_n8qP0K-FhVf510Kmg0-72zW1w81F8Z3V0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Hậu Hoàng
-  "UC4sLw1XisL8L_Kx9_v7H0eQ": "https://yt3.googleusercontent.com/ytc/AIdro_n_F8z7K0v08P3M0wK98_f9z00o_v3m20mEwK5=s240-c-k-c0x00ffffff-no-rj", // Cris Devil Gamer
-  "UC8pC_V_3G4-A4uGvLhV-nfg": "https://yt3.googleusercontent.com/ytc/AIdro_n88_f4XmD_5-Y28wM9HlZt2vD5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Khoai Lang Thang
-  "UCp7E7g4j8kZ2K-Y_91722zA": "https://yt3.googleusercontent.com/ytc/AIdro_n89K8g6O3V-f29y3o_6v0V8H9_Fv5m3V0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Lâm Vlog
-  "UCvT7fV10o3Tnb1Zl8L0K4yQ": "https://yt3.googleusercontent.com/ytc/AIdro_n_7z9O6c7F6z93vD5v_HlX1L7tEv5v3V0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Web5ngay
-  "UC7GvC2qJ9Q5h5n2c4K-9r3Q": "https://yt3.googleusercontent.com/ytc/AIdro_n_2z0o5c7F5z93vD5v_HlX1L7tEv5v3V0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Schannel
+  "UCxNguV2lPZ3G87n0PhP0vSw": "https://yt3.googleusercontent.com/4B_pebn_WUWdJsY2aNQ11jarvYaBAqlvm8kJMSR58yCE8ai5o0jWVq1naSLzU9eIMmcwd17UtA=s240-c-k-c0x00ffffff-no-rj", // J97
+  "UCb5C7kL2jQG6K1S1sZ1uO4A": "https://yt3.googleusercontent.com/ytc/AIdro_moeku1wSJ_5JYElsivgwUBW9jYwk2tsk6dgkop4bCQX9KRj77yp1bZwNyZvBy82WKOMA=s240-c-k-c0x00ffffff-no-rj", // Hậu Hoàng
+  "UC4sLw1XisL8L_Kx9_v7H0eQ": "https://yt3.googleusercontent.com/-qZbZ_G8r4oq3ckyxSzAjvpQKLtuEnxycedJqI-8bSjnsoqSLpgC6G8qT0uxwbdPqpYasVHOJPI=s240-c-k-c0x00ffffff-no-rj", // Cris Devil Gamer
+  "UC8pC_V_3G4-A4uGvLhV-nfg": "https://yt3.googleusercontent.com/EFB13mILKGh6KbJnTUayPFRw11s4iKhz6GtpbfTl2AAwmUo0FFB2jbxpOup4j5w0gAhYKyqudR4=s240-c-k-c0x00ffffff-no-rj", // Khoai Lang Thang
+  "UCp7E7g4j8kZ2K-Y_91722zA": "https://yt3.googleusercontent.com/ytc/AIdro_mrMQ8nwQsLxyCaQsjbiDx3uE62LqCQTqH7S8q2f0XffL0=s240-c-k-c0x00ffffff-no-rj", // Lâm Vlog
+  "UCvT7fV10o3Tnb1Zl8L0K4yQ": "https://yt3.googleusercontent.com/8C1LgYCy4sQq5UL2xOlcfoiOcvkwtD3fstl-q9Vzax7d2bYaIxbDIa3MKNNsZEuKD_ikxOGUhHQ=s240-c-k-c0x00ffffff-no-rj", // Web5ngay
+  "UC7GvC2qJ9Q5h5n2c4K-9r3Q": "https://yt3.googleusercontent.com/skvFNNcZs2ahlshGh9wx4Tih-K2rswja8iKEttDCV92qNoM0YAw54oi25rzcLvz90PU_FF73=s240-c-k-c0x00ffffff-no-rj", // Schannel
+  "UCkna2OcuN1E6u5I8GVtdkOw": "https://yt3.ggpht.com/XSw7CXmpOaXPx-XtHPt9zY4x7d7sObP25wkj2TyPt1aPtu0qxJFNW4xhinO726k6g_6totkw=s240-c-k-c0x00ffffff-no-rj", // Vie Channel - HTV2
+  "UCBLH89h5ovOL4hqTjepeMUg": "https://yt3.googleusercontent.com/G8Zg_0qPXG6ag5iHXaWxFplD52m40g7l7Wa9Owbu1zt2Jnqqs2taeogrkv3K6Pgjzhd5IbFiJMQ=s240-c-k-c0x00ffffff-no-rj", // Trang Nhung Pham
+  "UCotkNLf_Y3jfbLWuSFUCSBQ": "https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj", // Báo Tiền Phong News
   "UCfc97rtLrhbtPq7c3Pg3_3A": "https://yt3.googleusercontent.com/a-/ALV-UjXQ2hD0G-9P9h9p9g9h9g9h9g9h9g9h9g9h9g9h=s240-c-k-c0x00ffffff-no-rj", // tiktok hot trend
   "UCjtmyHIgpDwaLoytITs0QYg": "https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj", // Thiên Ý Giải Trí
   "UCkiIrwp_7IMy50IPhtSv_Bg": "https://yt3.googleusercontent.com/ytc/AIdro_n_9v988sD60d_f3Z1oO4A=s240-c-k-c0x00ffffff-no-rj", // Ci Đi Đi
@@ -181,6 +185,10 @@ export const resolveChannelMetaFromVideo = (video) => {
   let chId = ch.id || video.authorId || "";
   let isVerified = Boolean(ch.isVerified);
 
+  if (chId && PREDEFINED_AVATARS[chId]) {
+    chAvatar = PREDEFINED_AVATARS[chId];
+  }
+
   const titleLower = title.toLowerCase();
   const nameLower = chName.toLowerCase();
 
@@ -191,13 +199,34 @@ export const resolveChannelMetaFromVideo = (video) => {
       chId = "UCabsTV34JwALXKGMqHpvUiA";
       chAvatar = PREDEFINED_AVATARS["UCabsTV34JwALXKGMqHpvUiA"];
       isVerified = true;
-    } else if (titleLower.includes("tiền phong") || titleLower.includes("tien phong")) {
+    } else if (titleLower.includes("tiền phong") || titleLower.includes("tien phong") || titleLower.includes("điểm nóng thế giới") || titleLower.includes("không khí lạnh") || titleLower.includes("thời sự tối") || titleLower.includes("thái lan:")) {
       chName = "Báo Tiền Phong News";
+      chId = "UCotkNLf_Y3jfbLWuSFUCSBQ";
       chAvatar = "https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj";
       isVerified = true;
     } else if (titleLower.includes("tuổi trẻ") || titleLower.includes("tuoi tre")) {
       chName = "Báo Tuổi Trẻ";
-      chAvatar = "https://yt3.googleusercontent.com/ytc/AIdro_n44UqJ8FwJcW4z5qB4B2H-2uR8N6C8f8W3r7x1=s240-c-k-c0x00ffffff-no-rj";
+      chAvatar = "https://yt3.ggpht.com/R1rE9_3YC5vlksPznmgECLH6mwzGBa6vFbp8X_8lG73hqvXKyo3gybzGLl1PR5KMxVERwOVD5DE=s240-c-k-c0x00ffffff-no-rj";
+      isVerified = true;
+    } else if (titleLower.includes("thanh niên") || titleLower.includes("thanh nien")) {
+      chName = "Báo Thanh Niên";
+      chAvatar = "https://yt3.ggpht.com/GkT7U75a5se3B66z59JdxPM6fhcoeAEF6_NZJz9y2lymDpdXHq266b2_iZOAsPEPjcD2KrLO=s240-c-k-c0x00ffffff-no-rj";
+      isVerified = true;
+    } else if (titleLower.includes("cris devil") || titleLower.includes("crisdevilgamer") || titleLower.includes("người hàng xóm tinh nghịch")) {
+      chName = "Cris Devil Gamer";
+      chId = "UC4sLw1XisL8L_Kx9_v7H0eQ";
+      chAvatar = PREDEFINED_AVATARS["UC4sLw1XisL8L_Kx9_v7H0eQ"];
+      isVerified = true;
+    } else if (titleLower.includes("rap việt") || titleLower.includes("vie channel")) {
+      chName = "Vie Channel - HTV2";
+      chId = "UCkna2OcuN1E6u5I8GVtdkOw";
+      chAvatar = PREDEFINED_AVATARS["UCkna2OcuN1E6u5I8GVtdkOw"];
+      isVerified = true;
+    } else if (titleLower.includes("trang nhung")) {
+      chName = "Trang Nhung Pham";
+      chId = "UCBLH89h5ovOL4hqTjepeMUg";
+      chAvatar = PREDEFINED_AVATARS["UCBLH89h5ovOL4hqTjepeMUg"];
+      isVerified = false;
       isVerified = true;
     } else if (titleLower.includes("thanh niên") || titleLower.includes("thanh nien")) {
       chName = "Báo Thanh Niên";
@@ -2565,9 +2594,27 @@ export const YoutubeProvider = ({ children }) => {
       setBackgroundPage(activePage);
     }
     setIsMiniplayerActive(false);
-    pushHistoryState("watch", video, null, "");
+
+    const isPlaylist = Boolean(video.isPlaylist || video.playlistId || (video.duration && String(video.duration).toLowerCase().includes('video')) || (video.id && (video.id.startsWith('PL') || video.id.startsWith('OLAK') || video.id.startsWith('RD'))));
+    const targetPlaylistId = video.playlistId || (isPlaylist && (video.id.startsWith('PL') || video.id.startsWith('OLAK') || video.id.startsWith('RD')) ? video.id : null);
+    const playableVidId = video.firstVideoId || (video.thumbnailUrl ? video.thumbnailUrl.match(/\/vi\/([a-zA-Z0-9_-]{11})\//)?.[1] : null) || (video.id && video.id.length === 11 ? video.id : 'KPaRJWX0qZc');
+    const effectiveVidId = isPlaylist ? playableVidId : video.id;
+
+    if (isPlaylist && targetPlaylistId) {
+      if (video.playlistItems || video.items) {
+        setActivePlaylist({
+          id: targetPlaylistId,
+          title: video.title,
+          author: video.channel?.name || "YouTube",
+          items: video.playlistItems || video.items
+        });
+        setActivePlaylistIndex(0);
+      }
+    }
+
+    pushHistoryState("watch", { ...video, id: effectiveVidId, playlistId: targetPlaylistId }, null, "");
     const channelDesc = video.channel?.description || getChannelFallbackDescription(video.channel?.name);
-    const mockMatch = mockVideos.find(m => m.id === video.id);
+    const mockMatch = mockVideos.find(m => m.id === effectiveVidId || m.id === video.id);
     let initialTitle = (video.title && video.title !== "Đang tải..." && video.title !== "Video đang tải..." && video.title !== "Video YouTube")
       ? video.title
       : (mockMatch?.title || "");
@@ -2579,7 +2626,7 @@ export const YoutubeProvider = ({ children }) => {
       : (mockMatch?.channel?.avatar || getFallbackAvatar(initialChannelName));
 
     let seed = 0;
-    const str = String(video.id || "default");
+    const str = String(effectiveVidId || "default");
     for (let i = 0; i < str.length; i++) seed = str.charCodeAt(i) + ((seed << 5) - seed);
     seed = Math.abs(seed);
     const fallbackViews = `${((seed % 800) + 50)} N lượt xem`;
@@ -2588,6 +2635,8 @@ export const YoutubeProvider = ({ children }) => {
 
     const initialVideoObj = {
       ...video,
+      id: effectiveVidId,
+      playlistId: targetPlaylistId,
       title: (initialTitle || "Đang tải tiêu đề...").replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim(),
       channel: {
         ...video.channel,
@@ -2598,7 +2647,7 @@ export const YoutubeProvider = ({ children }) => {
       },
       likes: video.likes || mockMatch?.likes || `${Math.round(((seed % 800) + 50) * 0.05)} N`,
       views: video.views || mockMatch?.views || fallbackViews,
-      uploadedAt: translateDateVi(video.uploadedAt || mockMatch?.uploadedAt, video.id),
+      uploadedAt: translateDateVi(video.uploadedAt || mockMatch?.uploadedAt, effectiveVidId),
       comments: [],
       commentsLoading: true,
       recommendedVideos: []
@@ -2612,7 +2661,7 @@ export const YoutubeProvider = ({ children }) => {
     setRelatedSearchPage(1);
 
     // Fetch authentic real-time metadata (real title, views, subs, uploadDate) from local backend
-    fetch(`/api/video-details?id=${video.id}`)
+    fetch(`/api/video-details?id=${effectiveVidId}`)
       .then(r => r.ok ? r.json() : null)
       .then(vData => {
         if (vData && vData.success) {
@@ -2897,7 +2946,7 @@ export const YoutubeProvider = ({ children }) => {
               return {
                 ...prev,
                 title: clTitle,
-                views: vdData.viewCount ? formatViewsVi(vdData.viewCount) + " lượt xem" : prev.views,
+                views: vdData.viewCount ? formatViewsVi(vdData.viewCount) : prev.views,
                 likesCount: vdData.likeCount || prev.likesCount,
                 likes: vdData.likeCount ? formatLikesVi(vdData.likeCount) : prev.likes,
                 channel: {

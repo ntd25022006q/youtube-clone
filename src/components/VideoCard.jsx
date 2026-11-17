@@ -60,6 +60,9 @@ const getPlayableVideoId = (rawId = '') => {
     const cand = s.slice(2, 13);
     if (/^[a-zA-Z0-9_-]{11}$/.test(cand)) return cand;
   }
+  if (s.startsWith('PL') || s.startsWith('OLAK') || s.startsWith('UU') || s.startsWith('mix_')) {
+    return 'KPaRJWX0qZc';
+  }
   if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
   const m = s.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   if (m) return m[1];

@@ -354,12 +354,27 @@ const getPlayableVideoId = (rawId = '', item = null) => {
               ...(data.channel.id ? { [data.channel.id]: chAv } : {})
             }));
           }
+
+          // Automatically mount authentic YouTube playlist queue side panel when playlist is returned
+          if (data.playlist && data.playlist.videos && data.playlist.videos.length > 0) {
+            setActivePlaylist({
+              id: data.playlist.id,
+              title: data.playlist.title,
+              author: data.playlist.author,
+              items: data.playlist.videos
+            });
+            const curIdx = data.playlist.videos.findIndex(v => v.id === vidId || v.id === data.id);
+            setActivePlaylistIndex(curIdx >= 0 ? curIdx : 0);
+          }
+
           setActiveVideo(prev => {
-            if (!prev || prev.id !== vidId) return prev;
+            if (!prev || (prev.id !== vidId && (!data.id || prev.id !== data.id))) return prev;
+            const playableTargetId = (vidId.startsWith('PL') || vidId.startsWith('OLAK') || vidId.startsWith('RD')) ? (data.id || prev.id) : prev.id;
             return {
               ...prev,
+              id: playableTargetId,
               title: data.title || prev.title,
-              views: data.views || prev.views,
+              views: data.views ? String(data.views).replace(/(lượt\s*xem\s*)+/gi, 'lượt xem') : prev.views,
               uploadedAt: data.date || prev.uploadedAt,
               likes: data.likes || prev.likes,
               description: data.description || prev.description,
@@ -1845,7 +1860,9 @@ const getPlayableVideoId = (rawId = '', item = null) => {
             onClick={() => !isDescExpanded && setIsDescExpanded(true)}
           >
             <div className="description-meta">
-              <span className="views-count-text">{currentVideoState.views}</span>
+              <span className="views-count-text">
+                {String(currentVideoState.views || '').replace(/(lượt\s*xem\s*)+/gi, 'lượt xem')}
+              </span>
               <span className="uploaded-time-text">{currentVideoState.uploadedAt}</span>
               {getHashtags(currentVideoState.description, currentVideoState.title) && (
                 <span className="desc-hashtag">{getHashtags(currentVideoState.description, currentVideoState.title)}</span>

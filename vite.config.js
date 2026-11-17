@@ -541,10 +541,16 @@ const apiMiddlewaresPlugin = () => ({
                     chAvatar = 'https://yt3.ggpht.com/DOzZmwibXwssQ5f8zSl17fiw1jGoUE7AW4cW0Q4ysYyh3uB26fZPlpbuWsXU-wF1If26Kpv3=s240-c-k-c0x00ffffff-no-rj';
                   } else if (vTitleLower.includes('tuổi trẻ')) {
                     chName = 'Báo Tuổi Trẻ';
-                    chAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+                    chAvatar = 'https://yt3.ggpht.com/R1rE9_3YC5vlksPznmgECLH6mwzGBa6vFbp8X_8lG73hqvXKyo3gybzGLl1PR5KMxVERwOVD5DE=s240-c-k-c0x00ffffff-no-rj';
                   } else if (vTitleLower.includes('thanh niên')) {
                     chName = 'Báo Thanh Niên';
-                    chAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+                    chAvatar = 'https://yt3.ggpht.com/GkT7U75a5se3B66z59JdxPM6fhcoeAEF6_NZJz9y2lymDpdXHq266b2_iZOAsPEPjcD2KrLO=s240-c-k-c0x00ffffff-no-rj';
+                  } else if (vTitleLower.includes('cris devil') || vTitleLower.includes('crisdevilgamer') || vTitleLower.includes('người hàng xóm tinh nghịch')) {
+                    chName = 'Cris Devil Gamer';
+                    chAvatar = 'https://yt3.googleusercontent.com/-qZbZ_G8r4oq3ckyxSzAjvpQKLtuEnxycedJqI-8bSjnsoqSLpgC6G8qT0uxwbdPqpYasVHOJPI=s240-c-k-c0x00ffffff-no-rj';
+                  } else if (vTitleLower.includes('trang nhung') || vTitleLower.includes('rap việt')) {
+                    chName = 'Trang Nhung Pham';
+                    chAvatar = 'https://yt3.googleusercontent.com/G8Zg_0qPXG6ag5iHXaWxFplD52m40g7l7Wa9Owbu1zt2Jnqqs2taeogrkv3K6Pgjzhd5IbFiJMQ=s240-c-k-c0x00ffffff-no-rj';
                   } else if (vTitleLower.includes('htv')) {
                     chName = 'HTV Tin Tức';
                     chAvatar = 'https://yt3.ggpht.com/DdueFQ07aLXxotUIojrWewj5DxIflFDm0siM9OwGZX1WYzuPj5aO0uckZe-Q5fJ51hQOQ0p-=s240-c-k-c0x00ffffff-no-rj';
@@ -559,11 +565,11 @@ const apiMiddlewaresPlugin = () => ({
                     chAvatar = 'https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj';
                   } else {
                     chName = 'V-Trending Music';
-                    chAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+                    chAvatar = 'https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj';
                   }
                 }
                 if (!chAvatar) {
-                  chAvatar = 'https://yt3.googleusercontent.com/WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA=s240-c-k-c0x00ffffff-no-rj';
+                  chAvatar = 'https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj';
                 }
 
                 videos.push({
