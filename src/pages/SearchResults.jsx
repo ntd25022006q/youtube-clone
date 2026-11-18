@@ -821,7 +821,7 @@ const SearchResults = () => {
                 const video = item;
                 return (
                   <div
-                    key={video.id}
+                    key={`search_vid_${video.id}_${idx}`}
                     className="search-result-row"
                     onClick={() => handleVideoSelect(video)}
                     onMouseEnter={() => {

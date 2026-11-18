@@ -27,6 +27,7 @@ const Header = () => {
   const [inputVal, setInputVal] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
@@ -131,18 +132,47 @@ const Header = () => {
   }, []);
 
   const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    if (!inputVal.trim()) return;
-    setSearchQuery(inputVal);
-    navigateTo("search");
+    if (e && e.preventDefault) e.preventDefault();
+    const queryToUse = (activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex])
+      ? suggestions[activeSuggestionIndex]
+      : inputVal;
+    if (!queryToUse.trim()) return;
+    setInputVal(queryToUse);
+    setSearchQuery(queryToUse);
+    navigateTo("search", queryToUse);
     setShowSuggestions(false);
+    setActiveSuggestionIndex(-1);
   };
 
   const handleSuggestionClick = (title) => {
     setInputVal(title);
     setSearchQuery(title);
-    navigateTo("search");
+    navigateTo("search", title);
     setShowSuggestions(false);
+    setActiveSuggestionIndex(-1);
+  };
+
+  const handleKeyDown = (e) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (e.key === "Enter") {
+        handleSearchSubmit(e);
+      }
+      return;
+    }
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveSuggestionIndex(prev => (prev < suggestions.length - 1 ? prev + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveSuggestionIndex(prev => (prev > 0 ? prev - 1 : suggestions.length - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      handleSearchSubmit(e);
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+      setActiveSuggestionIndex(-1);
+    }
   };
 
   const handleClear = () => {
@@ -206,8 +236,10 @@ const Header = () => {
                 onChange={(e) => {
                   setInputVal(e.target.value);
                   setShowSuggestions(true);
+                  setActiveSuggestionIndex(-1);
                 }}
                 onFocus={() => setShowSuggestions(true)}
+                onKeyDown={handleKeyDown}
                 className="search-input"
               />
               {inputVal && (
@@ -232,7 +264,8 @@ const Header = () => {
             {suggestions.map((item, idx) => (
               <li
                 key={idx}
-                className="suggestion-item"
+                className={`suggestion-item ${idx === activeSuggestionIndex ? "active-suggestion" : ""}`}
+                onMouseEnter={() => setActiveSuggestionIndex(idx)}
                 onClick={() => handleSuggestionClick(item)}
               >
                 <Search size={16} className="suggestion-icon" />

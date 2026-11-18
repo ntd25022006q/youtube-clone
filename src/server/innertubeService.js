@@ -82,7 +82,7 @@ export function sanitizeTimeVi(rawTime, idFallback = '') {
   return t;
 }
 
-export const DEFAULT_NEUTRAL_AVATAR = 'https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj';
+export const DEFAULT_NEUTRAL_AVATAR = 'https://ui-avatars.com/api/?name=YT&background=cc0000&color=fff&rounded=true&bold=true&size=240';
 
 export function parseLockupItem(item, fallbackChannel = null) {
   if (!item) return null;

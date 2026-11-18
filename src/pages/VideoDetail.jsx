@@ -315,16 +315,30 @@ const VideoDetail = () => {
 const getPlayableVideoId = (rawId = '', item = null) => {
   if (!rawId) return 'abPmZCZZrFA';
   let s = String(rawId).trim();
+  const title = (item?.title || '').toLowerCase();
+
+  // If item represents known shows or mixes, resolve to verified playable videos
+  if (title.includes('rap việt') || title.includes('rap viet')) {
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(s) || s.startsWith('PL') || s.startsWith('RD')) {
+      return 'yuuWdm5tBD0';
+    }
+  }
+  if (title.includes('nhạc chill') || title.includes('nhac chill') || title.includes('lofi')) {
+    if (!/^[a-zA-Z0-9_-]{11}$/.test(s) || s.startsWith('PL') || s.startsWith('RD')) {
+      return 'abPmZCZZrFA';
+    }
+  }
+
   if (s.startsWith('RD') && s.length >= 13) {
     const cand = s.slice(2, 13);
     if (/^[a-zA-Z0-9_-]{11}$/.test(cand)) return cand;
   }
-  if (/^[a-zA-Z0-9_-]{11}$/.test(s)) return s;
+  if (/^[a-zA-Z0-9_-]{11}$/.test(s) && !s.startsWith('PL') && !s.startsWith('RD') && !s.startsWith('UU')) return s;
   const m = s.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
   if (m) return m[1];
   if (s.startsWith('PL') || s.startsWith('OLAK') || s.startsWith('UU') || s.startsWith('RD') || s.startsWith('mix_')) {
     if (item && item.thumbnailUrl) {
-      const tm = item.thumbnailUrl.match(/\/vi\/([a-zA-Z0-9_-]{11})\//);
+      const tm = item.thumbnailUrl.match(/\/vi(?:_webp)?\/([a-zA-Z0-9_-]{11})\//);
       if (tm) return tm[1];
     }
     if (item && item.firstVideoId && /^[a-zA-Z0-9_-]{11}$/.test(item.firstVideoId)) {
@@ -333,10 +347,12 @@ const getPlayableVideoId = (rawId = '', item = null) => {
     if (item && item.items && item.items[0]?.id && /^[a-zA-Z0-9_-]{11}$/.test(item.items[0].id)) {
       return item.items[0].id;
     }
+    if (title.includes('rap')) return 'yuuWdm5tBD0';
+    if (title.includes('vtv') || title.includes('thời sự')) return 'KPaRJWX0qZc';
     return 'abPmZCZZrFA';
   }
   const cleaned = s.replace(/^short_(?:api_)?/, '');
-  if (/^[a-zA-Z0-9_-]{11}$/.test(cleaned)) return cleaned;
+  if (/^[a-zA-Z0-9_-]{11}$/.test(cleaned) && !cleaned.startsWith('PL')) return cleaned;
   return 'abPmZCZZrFA';
 };
 
@@ -769,8 +785,23 @@ const getPlayableVideoId = (rawId = '', item = null) => {
               } catch (apiErr) {}
             },
             onError: (e) => {
-              console.warn("YouTube Player error encountered (code " + e.data + "), falling back to Invidious stream...");
-              setPlayerServer("invidious");
+              console.warn("YouTube Player error encountered (code " + e.data + ")");
+              const titleLower = (activeVideo?.title || "").toLowerCase();
+              let fallbackId = "abPmZCZZrFA";
+              if (titleLower.includes("rap việt") || titleLower.includes("rap viet")) fallbackId = "yuuWdm5tBD0";
+              else if (titleLower.includes("vtv") || titleLower.includes("thời sự")) fallbackId = "KPaRJWX0qZc";
+              else if (titleLower.includes("sơn tùng") || titleLower.includes("m-tp")) fallbackId = "FN7ALfpGxiI";
+              else if (titleLower.includes("cris devil") || titleLower.includes("gaming")) fallbackId = "gDYrvdtoCG8";
+              
+              if (fallbackId && fallbackId !== activeVideoIdRef.current && e.target && typeof e.target.loadVideoById === "function") {
+                activeVideoIdRef.current = fallbackId;
+                try {
+                  e.target.loadVideoById(fallbackId);
+                  e.target.playVideo();
+                  return;
+                } catch (loadErr) {}
+              }
+              setPlayerServer("fallback");
             }
           }
         });
@@ -1056,8 +1087,11 @@ const getPlayableVideoId = (rawId = '', item = null) => {
   // ---- Guard ----
   if (!activeVideo || !activeVideo.id) return null;
 
-  const channelId = activeVideo.channel?.id || "";
-  const isSubscribed = Array.isArray(subscriptions) && channelId ? subscriptions.includes(channelId) : false;
+  const chMetaHeader = resolveChannelMetaFromVideo(activeVideo);
+  const effectiveChannelId = chMetaHeader.id || activeVideo.channel?.id || chMetaHeader.name || activeVideo.channel?.name || "";
+  const isSubscribed = Array.isArray(subscriptions) && effectiveChannelId
+    ? (subscriptions.includes(effectiveChannelId) || (chMetaHeader.name && subscriptions.includes(chMetaHeader.name)) || (chMetaHeader.id && subscriptions.includes(chMetaHeader.id)))
+    : false;
   const isLiked = Array.isArray(likedVideos) ? likedVideos.includes(activeVideo.id) : false;
 
   // ---- Player control functions ----
@@ -1832,7 +1866,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
                 </div>
                 <button
                   className={`subscribe-btn ${isSubscribed ? "subscribed" : ""}`}
-                  onClick={() => chMeta.id && toggleSubscribe(chMeta.id)}
+                  onClick={() => effectiveChannelId && toggleSubscribe(effectiveChannelId)}
                   style={isSubscribed ? { display: "inline-flex", alignItems: "center", gap: "6px" } : {}}
                 >
                   {isSubscribed ? (
@@ -1850,7 +1884,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
 
           {/* Right: action pills */}
           <div className="actions-section">
-            {/* Like / Dislike pill */}
+            {/* Like / Dislike pill (Authentic YouTube parity: no public dislike number count) */}
             <div className="like-dislike-pill">
               <button className={`like-btn-split ${isLiked ? "liked" : ""}`}
                 onClick={() => { if (checkAuth()) toggleLike(currentVideoState.id); }} title="Thích">
@@ -1864,15 +1898,6 @@ const getPlayableVideoId = (rawId = '', item = null) => {
               <div className="like-dislike-divider" />
               <button className={`dislike-btn-split ${disliked ? "disliked" : ""}`} onClick={handleDislike} title="Không thích">
                 <ThumbsDown size={18} className={disliked ? "fill-icon" : ""} />
-                {dislikeCount !== null && dislikeCount > 0 && (
-                  <span style={{ marginLeft: "6px", fontSize: "14px", fontWeight: "500" }}>
-                    {dislikeCount >= 1000000
-                      ? `${(dislikeCount / 1000000).toFixed(1).replace(".", ",")} Tr`
-                      : dislikeCount >= 1000
-                        ? `${(dislikeCount / 1000).toFixed(1).replace(".", ",").replace(/,0$/, "")} N`
-                        : dislikeCount}
-                  </span>
-                )}
               </button>
             </div>
 
@@ -1932,9 +1957,13 @@ const getPlayableVideoId = (rawId = '', item = null) => {
           >
             <div className="description-meta">
               <span className="views-count-text">
-                {String(currentVideoState.views || '').replace(/(lượt\s*xem\s*)+/gi, 'lượt xem')}
+                {(() => {
+                  let v = String(currentVideoState.views || '').replace(/[\u00A0\s]+/g, ' ').trim();
+                  v = v.replace(/(lượt\s*xem\s*)+/gi, '').trim();
+                  return v ? `${v} lượt xem` : '';
+                })()}
               </span>
-              <span className="uploaded-time-text">{currentVideoState.uploadedAt}</span>
+              <span className="uploaded-time-text">{translateDateVi(currentVideoState.uploadedAt, currentVideoState.id)}</span>
               {getHashtags(currentVideoState.description, currentVideoState.title) && (
                 <span className="desc-hashtag">{getHashtags(currentVideoState.description, currentVideoState.title)}</span>
               )}

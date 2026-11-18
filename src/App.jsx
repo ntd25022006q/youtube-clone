@@ -182,8 +182,8 @@ function AppContent() {
           </SignInGate>
         );
       case "watch":
-        if (!isMiniplayerActive) return null;
-        return <Home />;
+        if (isMiniplayerActive) return <Home />;
+        return <VideoDetail key={activeVideo?.id || 'watch'} />;
       case "home":
       default:
         return <Home />;
@@ -251,13 +251,13 @@ function AppContent() {
           {renderPage()}
         </main>
       </div>
-      {!showNative && activeVideo && (
+      {!showNative && activeVideo && isMiniplayerActive && (
         <div 
-          className={`global-watch-overlay ${isMiniplayerActive ? "mini-mode" : "full-mode"}`}
-          style={isMiniplayerActive && miniPos.x !== null ? { left: `${miniPos.x}px`, top: `${miniPos.y}px`, right: 'auto', bottom: 'auto' } : {}}
+          className="global-watch-overlay mini-mode"
+          style={miniPos.x !== null ? { left: `${miniPos.x}px`, top: `${miniPos.y}px`, right: 'auto', bottom: 'auto' } : {}}
           onPointerDown={handleMiniDragStart}
         >
-          <VideoDetail key={activeVideo.id} />
+          <VideoDetail key={`mini_${activeVideo.id}`} />
         </div>
       )}
 

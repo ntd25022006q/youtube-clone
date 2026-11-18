@@ -150,7 +150,8 @@
   color: var(--text-primary);
 }
 
-.suggestion-item:hover {
+.suggestion-item:hover,
+.suggestion-item.active-suggestion {
   background-color: rgba(255, 255, 255, 0.08);
 }
 

@@ -211,7 +211,7 @@ const VideoCard = ({ video }) => {
   // Robust avatar with authentic channel fallback
   const avatarSrc = avatarFailed
     ? getFallbackAvatar(channelMeta.name)
-    : (channelMeta.avatar || getFallbackAvatar(channelMeta.name));
+    : (channelMeta.avatar && !channelMeta.avatar.includes("default-user") ? channelMeta.avatar : getFallbackAvatar(channelMeta.name));
 
   const isSavedWatchLater = watchLater && watchLater.includes(video.id);
   const isLive = Boolean(video.isLive || (video.title && (video.title.includes("TRỰC TIẾP") || video.title.includes("Trực tiếp") || video.title.includes("🔴"))) || video.duration === "Trực tiếp");
@@ -305,7 +305,9 @@ const VideoCard = ({ video }) => {
               if (rawViews.length > 35 || rawViews.includes('\n')) rawViews = "";
               if (rawTime.length > 35 || rawTime.includes('\n')) rawTime = "";
 
-              rawViews = rawViews.replace(/(lượt\s*xem\s*)+/gi, 'lượt xem');
+              rawViews = rawViews.replace(/^[·•.\s-]+|[·•.\s-]+$/g, "").trim();
+              rawTime = rawTime.replace(/^[·•.\s-]+|[·•.\s-]+$/g, "").trim();
+              rawViews = rawViews.replace(/(lượt\s*xem\s*)+/gi, "").trim();
 
               const seedStr = video.id || video.title || "yt_card";
               let hash = 0;
@@ -314,7 +316,7 @@ const VideoCard = ({ video }) => {
               const fallbackViews = ['85 N lượt xem', '140 N lượt xem', '320 N lượt xem', '650 N lượt xem', '1,2 Tr lượt xem', '2,8 Tr lượt xem', '4,5 Tr lượt xem'];
 
               const safeViews = (rawViews && rawViews !== "•" && rawViews !== "." && rawViews !== "Nhiều lượt xem" && rawViews !== "Nhiều video" && /[a-zA-Z0-9\u00C0-\u024F\u1EA0-\u1EF9]/.test(rawViews))
-                ? (/lượt\s*xem/i.test(rawViews) ? rawViews : `${rawViews} lượt xem`)
+                ? `${rawViews} lượt xem`
                 : fallbackViews[hash % fallbackViews.length];
 
               const safeTime = (rawTime && rawTime !== "•" && rawTime !== "." && rawTime !== "Gần đây" && rawTime !== "Danh sách phát" && /[a-zA-Z0-9\u00C0-\u024F\u1EA0-\u1EF9]/.test(rawTime))

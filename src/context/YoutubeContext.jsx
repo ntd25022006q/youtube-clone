@@ -78,7 +78,7 @@ const stripHtml = (html) => {
 const SAFE_ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 const isSafeId = (id) => typeof id === 'string' && SAFE_ID_RE.test(id);
 
-export const DEFAULT_AVATAR = "https://yt3.ggpht.com/a/default-user=s88-c-k-c0x00ffffff-no-rj";
+export const DEFAULT_AVATAR = "https://ui-avatars.com/api/?name=YT&background=cc0000&color=fff&rounded=true&bold=true&size=240";
 
 export const getAuthenticBanner = (chId, name) => {
   const lower = (name || "").toLowerCase();
@@ -102,8 +102,8 @@ export const getFallbackAvatar = (name, channelId = null) => {
   if (channelId && PREDEFINED_AVATARS[channelId]) {
     return PREDEFINED_AVATARS[channelId];
   }
-  if (!name || name === "Channel" || name === "Kênh" || name === "YouTube Creator" || name === "Guest" || name === "User" || name === "Người dùng" || name === "Người dùng YouTube" || name === "Kênh YouTube") {
-    return "https://yt3.ggpht.com/a/default-user=s240-c-k-c0x00ffffff-no-rj";
+  if (!name || name === "Channel" || name === "Kênh" || name === "YouTube Creator" || name === "Guest" || name === "User" || name === "Người dùng" || name === "Người dùng YouTube" || name === "Kênh YouTube" || name === "YouTube") {
+    return "https://ui-avatars.com/api/?name=YT&background=cc0000&color=fff&rounded=true&bold=true&size=240";
   }
   const clean = name.trim();
   const lower = clean.toLowerCase();
@@ -123,6 +123,7 @@ export const getFallbackAvatar = (name, channelId = null) => {
   if (lower.includes("st.319") || lower.includes("st319")) return PREDEFINED_AVATARS["UCSnVteUNlhr1SqCjTQx0PDQ"];
   if (lower.includes("rap việt") || lower.includes("vie channel") || lower.includes("htv2")) return PREDEFINED_AVATARS["UCkna2OcuN1E6u5I8GVtdkOw"];
   if (lower.includes("trang nhung")) return PREDEFINED_AVATARS["UCBjIOhKsheAD-LaLQAks-Sg"];
+  if (lower.includes("thôn quê") || lower.includes("cuộc sống thôn quê")) return "https://yt3.googleusercontent.com/a-/ALV-UjX8kE0yT-5o8z1tq8fH9d6pL7kM5jV2x4n0=s240-c-k-c0x00ffffff-no-rj";
   if (lower.includes("tiền phong")) return PREDEFINED_AVATARS["UCotkNLf_Y3jfbLWuSFUCSBQ"];
   if (lower.includes("tuổi trẻ")) return PREDEFINED_AVATARS["UC47WI-kZXFf0H_f7pvaNCEQ"];
   if (lower.includes("thanh niên")) return PREDEFINED_AVATARS["UCIW9cGgoRuGJnky3K3tbzNg"];
@@ -138,8 +139,12 @@ export const getFallbackAvatar = (name, channelId = null) => {
     return "https://yt3.googleusercontent.com/ytc/AIdro_n98_Xm5y50_t-Y3Y6J0D5E3v_n0mEwK5=s240-c-k-c0x00ffffff-no-rj";
   }
 
-  // Dynamic creator avatar generator with distinct, vivid colors so channels never appear with the blank blue silhouette
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(clean)}&background=random&color=fff&rounded=true&bold=true&size=240`;
+  // Deterministic YouTube dark theme creator avatar with authentic styling
+  const darkPalette = ["cc0000", "282828", "1e3a8a", "065f46", "831843", "701a75", "1f2937"];
+  let hash = 0;
+  for (let i = 0; i < clean.length; i++) hash = (hash * 31 + clean.charCodeAt(i)) >>> 0;
+  const bg = darkPalette[hash % darkPalette.length];
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(clean)}&background=${bg}&color=fff&rounded=true&bold=true&size=240`;
 };
 
 export const PREDEFINED_AVATARS = {
@@ -223,6 +228,11 @@ export const PREDEFINED_AVATARS = {
   "UCBLH89h5ovOL4hqTjepeMUg": "https://yt3.googleusercontent.com/ytc/AIdro_ltqzGXA-koufBMRrrcS3dSOxzZVjY_c4x3ogJdH6JlLvc=s240-c-k-c0x00ffffff-no-rj",
   "trang nhung pham": "https://yt3.googleusercontent.com/ytc/AIdro_ltqzGXA-koufBMRrrcS3dSOxzZVjY_c4x3ogJdH6JlLvc=s240-c-k-c0x00ffffff-no-rj",
   "trang nhung": "https://yt3.googleusercontent.com/ytc/AIdro_ltqzGXA-koufBMRrrcS3dSOxzZVjY_c4x3ogJdH6JlLvc=s240-c-k-c0x00ffffff-no-rj",
+
+  // Cuộc Sống Thôn Quê VN
+  "cuộc sống thôn quê vn": "https://yt3.googleusercontent.com/a-/ALV-UjX8kE0yT-5o8z1tq8fH9d6pL7kM5jV2x4n0=s240-c-k-c0x00ffffff-no-rj",
+  "cuộc sống thôn quê": "https://yt3.googleusercontent.com/a-/ALV-UjX8kE0yT-5o8z1tq8fH9d6pL7kM5jV2x4n0=s240-c-k-c0x00ffffff-no-rj",
+  "@cuộcsốngthônquêvn": "https://yt3.googleusercontent.com/a-/ALV-UjX8kE0yT-5o8z1tq8fH9d6pL7kM5jV2x4n0=s240-c-k-c0x00ffffff-no-rj",
 
   // ST.319 Entertainment
   "UCSnVteUNlhr1SqCjTQx0PDQ": "https://yt3.ggpht.com/8XBj_wvyybTCmgeOEedl3xPTdDRwWEMJ3nz0v8FtBsUoLivn4oMAtH8j1DqJWeWoIYWVUIWIuhk=s240-c-k-c0x00ffffff-no-rj",
@@ -797,12 +807,17 @@ export const formatVideosCountVi = (count) => {
 };
 
 export const translateDateVi = (text, fallbackSeed = "") => {
-  if (!text || typeof text !== 'string' || text.trim().toLowerCase() === "ago" || text.trim().toLowerCase() === "recently" || text.trim() === "Gần đây") {
+  const getFallbackRelative = (seedVal) => {
     let seed = 0;
-    const str = String(fallbackSeed || "yt_default");
+    const str = String(seedVal || "yt_default");
     for (let i = 0; i < str.length; i++) seed = str.charCodeAt(i) + ((seed << 5) - seed);
     seed = Math.abs(seed);
     const fallbackList = [
+      "2 giờ trước",
+      "5 giờ trước",
+      "12 giờ trước",
+      "1 ngày trước",
+      "2 ngày trước",
       "3 ngày trước",
       "5 ngày trước",
       "1 tuần trước",
@@ -810,13 +825,33 @@ export const translateDateVi = (text, fallbackSeed = "") => {
       "3 tuần trước",
       "1 tháng trước",
       "2 tháng trước",
-      "3 tháng trước",
-      "5 tháng trước"
+      "4 tháng trước",
+      "6 tháng trước",
+      "1 năm trước"
     ];
     return fallbackList[seed % fallbackList.length];
+  };
+
+  if (!text || typeof text !== 'string') {
+    return getFallbackRelative(fallbackSeed);
   }
 
-  let t = text.toLowerCase().trim();
+  const rawLower = text.toLowerCase().trim();
+  if (
+    rawLower === "ago" ||
+    rawLower === "recently" ||
+    rawLower === "gần đây" ||
+    rawLower.startsWith("gần đây") ||
+    rawLower.includes("gần đây") ||
+    rawLower === "trước" ||
+    rawLower === ""
+  ) {
+    const isEdited = rawLower.includes("chỉnh sửa") || rawLower.includes("edited");
+    const base = getFallbackRelative(fallbackSeed);
+    return isEdited ? `${base} (đã chỉnh sửa)` : base;
+  }
+
+  let t = rawLower;
   
   // If it's an ISO date like "2024-10-25"
   if (/^\d{4}-\d{2}-\d{2}/.test(t)) {
@@ -1411,7 +1446,7 @@ export const YoutubeProvider = ({ children }) => {
   const [instances, setInstances] = useState(FALLBACK_INSTANCES);
   const [activeInstance, setActiveInstance] = useState("");
   
-  // Cache of channel avatars to resolve missing ones
+  // Cache of channel avatars to resolve missing ones (filtered to purge poisoned caches)
   const [channelAvatars, setChannelAvatars] = useState(() => {
     try {
       const saved = localStorage.getItem("yt_channel_avatars");
@@ -1419,10 +1454,16 @@ export const YoutubeProvider = ({ children }) => {
       const clean = {};
       Object.entries(parsed).forEach(([k, v]) => {
         if (typeof v === "string" && !v.includes("default-user") && !v.includes("default_user") && !v.includes("dicebear.com") && !v.startsWith("data:")) {
-          clean[k] = v;
+          // Reject poisoned VTV24 avatar leaked into unrelated channels
+          const isVtvAvatar = v.includes("WkRGl-uLsgZ8pwNxDnWTk6J1Xji1ZTOyyGia_dNapDkYnVDhlYu2X4Klc8hfdBY4CS15G7DPvFA");
+          const isVtvKey = k.toLowerCase().includes("vtv") || k === "UCabsTV34JwALXKGMqHpvUiA";
+          if (!isVtvAvatar || isVtvKey) {
+            clean[k] = v;
+          }
         }
       });
-      return { ...PREDEFINED_AVATARS, ...clean };
+      // PREDEFINED_AVATARS always take precedence over cache
+      return { ...clean, ...PREDEFINED_AVATARS };
     } catch (e) {
       return { ...PREDEFINED_AVATARS };
     }
@@ -2371,6 +2412,11 @@ export const YoutubeProvider = ({ children }) => {
               if (resJson && resJson.videos && resJson.videos.length > 0) {
                 const mappedVids = resJson.videos.map(v => {
                   const meta = resolveChannelMetaFromVideo(v);
+                  let seedVal = 0;
+                  const seedStr = String(v.id || v.title || "vid");
+                  for (let i = 0; i < seedStr.length; i++) seedVal = (seedVal * 31 + seedStr.charCodeAt(i)) >>> 0;
+                  const deterministicViews = `${((seedVal % 850) + 120)} N lượt xem`;
+                  const deterministicTime = translateDateVi(v.uploadedAt, v.id || v.title);
                   return {
                     id: v.id,
                     videoId: v.id,
@@ -2388,11 +2434,11 @@ export const YoutubeProvider = ({ children }) => {
                       avatar: meta.avatar,
                       isVerified: meta.isVerified
                     },
-                    views: v.views || "Nhiều lượt xem",
-                    uploadedAt: v.uploadedAt || "Gần đây",
-                    publishedText: v.uploadedAt || "Gần đây",
+                    views: (v.views && v.views !== "Nhiều lượt xem") ? v.views : deterministicViews,
+                    uploadedAt: (v.uploadedAt && v.uploadedAt !== "Gần đây") ? translateDateVi(v.uploadedAt, v.id) : deterministicTime,
+                    publishedText: (v.uploadedAt && v.uploadedAt !== "Gần đây") ? translateDateVi(v.uploadedAt, v.id) : deterministicTime,
                     viewCount: parseInt(String(v.views).replace(/[^0-9]/g, '')) || 100000,
-                    viewCountText: v.views || "Nhiều lượt xem",
+                    viewCountText: (v.views && v.views !== "Nhiều lượt xem") ? v.views : deterministicViews,
                     lengthSeconds: 240,
                     duration: v.duration || "3:30",
                     category: category !== "Tất cả" ? category : ""
@@ -2434,6 +2480,11 @@ export const YoutubeProvider = ({ children }) => {
               if (resJson && resJson.videos && resJson.videos.length > 0) {
                 const mappedVids = resJson.videos.map(v => {
                   const meta = resolveChannelMetaFromVideo(v);
+                  let seedVal = 0;
+                  const seedStr = String(v.id || v.title || "vid");
+                  for (let i = 0; i < seedStr.length; i++) seedVal = (seedVal * 31 + seedStr.charCodeAt(i)) >>> 0;
+                  const deterministicViews = `${((seedVal % 850) + 120)} N lượt xem`;
+                  const deterministicTime = translateDateVi(v.uploadedAt, v.id || v.title);
                   return {
                     id: v.id,
                     videoId: v.id,
@@ -2451,11 +2502,11 @@ export const YoutubeProvider = ({ children }) => {
                       avatar: meta.avatar,
                       isVerified: meta.isVerified
                     },
-                    views: v.views || "Nhiều lượt xem",
-                    uploadedAt: v.uploadedAt || "Gần đây",
-                    publishedText: v.uploadedAt || "Gần đây",
+                    views: (v.views && v.views !== "Nhiều lượt xem") ? v.views : deterministicViews,
+                    uploadedAt: (v.uploadedAt && v.uploadedAt !== "Gần đây") ? translateDateVi(v.uploadedAt, v.id) : deterministicTime,
+                    publishedText: (v.uploadedAt && v.uploadedAt !== "Gần đây") ? translateDateVi(v.uploadedAt, v.id) : deterministicTime,
                     viewCount: parseInt(String(v.views).replace(/[^0-9]/g, '')) || 100000,
-                    viewCountText: v.views || "Nhiều lượt xem",
+                    viewCountText: (v.views && v.views !== "Nhiều lượt xem") ? v.views : deterministicViews,
                     lengthSeconds: 240,
                     duration: v.duration || "3:30",
                     category: category !== "Tất cả" ? category : ""
@@ -3056,7 +3107,7 @@ export const YoutubeProvider = ({ children }) => {
       setIsDetailsLoading(false); // Play immediately!
 
       // Fetch comments asynchronously in background
-      fetchCommentsInBackground(video.id, instance, partialVideoObj);
+      fetchCommentsInBackground(video.id, usedInstance, partialVideoObj);
 
     } catch (e) {
       console.warn("Failed to fetch full video details, using YouTube oEmbed, yt-dlp and channel fallback:", e);
@@ -4181,7 +4232,7 @@ export const YoutubeProvider = ({ children }) => {
 
   // Nav helper
 
-  const navigateTo = (pageName) => {
+  const navigateTo = (pageName, queryOrData = null) => {
     if (pageName !== "watch") {
       setBackgroundPage(pageName);
       if (activeVideo) {
@@ -4190,11 +4241,14 @@ export const YoutubeProvider = ({ children }) => {
     }
     setActivePage(pageName);
     
+    const targetQuery = (typeof queryOrData === "string" ? queryOrData : null) || searchQuery;
+
     // Push history state with preserved parameters
     if (pageName === "watch" && activeVideo) {
       pushHistoryState("watch", activeVideo, null, "");
-    } else if (pageName === "search" && searchQuery) {
-      pushHistoryState("search", null, null, searchQuery);
+    } else if (pageName === "search" && targetQuery) {
+      if (typeof queryOrData === "string") setSearchQuery(queryOrData);
+      pushHistoryState("search", null, null, targetQuery);
     } else if (pageName === "channel" && activeChannel) {
       pushHistoryState("channel", null, activeChannel, "");
     } else {
@@ -4558,6 +4612,7 @@ export const YoutubeProvider = ({ children }) => {
         setLastPlaybackTime,
         backgroundPage,
         setBackgroundPage,
+        pushHistoryState,
         channelAvatars,
         searchMockVideos,
         toast,
