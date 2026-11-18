@@ -686,7 +686,7 @@ const SearchResults = () => {
             </div>
           ) : (
             <div className="search-results-list">
-              {filteredResults.map((item) => {
+              {filteredResults.map((item, idx) => {
                 if (item.type === "channel") {
                   const isSubbed = subscriptions.includes(item.id);
                   return (

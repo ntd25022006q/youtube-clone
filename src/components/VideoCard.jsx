@@ -227,7 +227,7 @@ const VideoCard = ({ video }) => {
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
-        <div className="thumbnail-container">
+        <div className="thumbnail-container" style={{ position: "relative", overflow: "hidden" }}>
           {isHovered && !isLive && playableId && (
             <>
               <iframe

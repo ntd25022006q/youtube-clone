@@ -63,7 +63,7 @@ const Sidebar = () => {
     ch && ch.id && safeSubscriptions.includes(ch.id)
   );
 
-  if (!isSidebarExpanded) {
+  if (!isSidebarExpanded || activePage === "shorts") {
     if (activePage === "watch") return null;
     return (
       <aside className="yt-sidebar collapsed">

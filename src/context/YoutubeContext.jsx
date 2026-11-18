@@ -4273,6 +4273,11 @@ export const YoutubeProvider = ({ children }) => {
     }
   };
 
+  const handleCategorySelect = (category) => {
+    setSelectedCategory(category);
+    fetchTrending(category, 1, false);
+  };
+
   const checkAuth = () => {
     if (!currentUser) {
       setShowLoginModal(true);
@@ -4553,6 +4558,7 @@ export const YoutubeProvider = ({ children }) => {
         isChannelLoading,
         selectedCategory,
         setSelectedCategory,
+        handleCategorySelect,
         lastFetchedCategory,
         searchQuery,
         setSearchQuery,

@@ -5,7 +5,11 @@ import { YoutubeContext } from "../context/YoutubeContext";
 import "./components.css";
 
 const CategoryBar = () => {
-  const { selectedCategory, handleCategorySelect } = useContext(YoutubeContext);
+  const { selectedCategory, handleCategorySelect, setSelectedCategory, fetchTrending } = useContext(YoutubeContext);
+  const onSelect = handleCategorySelect || ((cat) => {
+    if (typeof setSelectedCategory === "function") setSelectedCategory(cat);
+    if (typeof fetchTrending === "function") fetchTrending(cat, 1, false);
+  });
   const scrollContainerRef = useRef(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(true);
@@ -39,7 +43,9 @@ const CategoryBar = () => {
   };
 
   const handleCategoryClick = (category) => {
-    handleCategorySelect(category);
+    if (typeof onSelect === "function") {
+      onSelect(category);
+    }
   };
 
   return (

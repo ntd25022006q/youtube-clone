@@ -126,8 +126,9 @@ function AppContent() {
 
   // Switch-case based page routing
   const renderPage = () => {
-    
-    const pageToRender = activePage === "watch" ? (backgroundPage || "home") : activePage;
+    const pageToRender = (activePage === "watch" && isMiniplayerActive)
+      ? (backgroundPage || "home")
+      : activePage;
     switch (pageToRender) {
       case "native":
         return <NativeYouTube />;
@@ -182,7 +183,6 @@ function AppContent() {
           </SignInGate>
         );
       case "watch":
-        if (isMiniplayerActive) return <Home />;
         return <VideoDetail key={activeVideo?.id || 'watch'} />;
       case "home":
       default:
@@ -247,7 +247,7 @@ function AppContent() {
       <div className="main-layout">
         {/* Render Sidebar only in custom Pro mode */}
         {!showNative && (activePage !== "watch" || isSidebarExpanded) && <Sidebar />}
-        <main className={`content-area ${showNative || activePage === "watch" ? "no-sidebar" : (!isSidebarExpanded ? "collapsed" : "")}`} style={showNative ? { padding: 0, margin: 0, maxWidth: "100%", width: "100%", height: "calc(100vh - 56px)" } : {}}>
+        <main className={`content-area ${showNative || activePage === "watch" ? "no-sidebar" : (!isSidebarExpanded || activePage === "shorts" ? "collapsed" : "")}`} style={showNative ? { padding: 0, margin: 0, maxWidth: "100%", width: "100%", height: "calc(100vh - 56px)" } : {}}>
           {renderPage()}
         </main>
       </div>

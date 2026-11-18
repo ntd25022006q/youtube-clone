@@ -473,28 +473,6 @@ const getPlayableVideoId = (rawId = '', item = null) => {
     return () => { active = false; };
   }, [activeVideo?.id, currentVideoState?.id]);
 
-  // Real-time live engagement ticker (subtly increment likes and views while playing)
-  useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setActiveVideo(prev => {
-        if (!prev) return prev;
-        const currentLikes = prev.likesCount || 1000;
-        const newLikes = currentLikes + Math.floor(Math.random() * 2) + 1;
-        return {
-          ...prev,
-          likesCount: newLikes,
-          likes: newLikes >= 1000000 
-            ? `${(newLikes / 1000000).toFixed(1).replace(".", ",")} Tr` 
-            : newLikes >= 1000 
-              ? `${(newLikes / 1000).toFixed(1).replace(".", ",")} N` 
-              : String(newLikes)
-        };
-      });
-    }, 18000);
-    return () => clearInterval(interval);
-  }, [isPlaying]);
-
   // Resolve authentic channel avatar and real subscribers if missing or default
   useEffect(() => {
     const chName = currentVideoState?.channel?.name;
@@ -630,25 +608,6 @@ const getPlayableVideoId = (rawId = '', item = null) => {
     return () => clearInterval(timer);
   }, [player, isPlaying]);
 
-  // Real-time live view counter increment while playing (matching YouTube real-time analytics)
-  useEffect(() => {
-    let viewTicker;
-    if (isPlaying && activeVideo?.viewsCount) {
-      viewTicker = setInterval(() => {
-        setActiveVideo(prev => {
-          if (!prev || !prev.viewsCount) return prev;
-          const nextCount = prev.viewsCount + Math.floor(Math.random() * 3) + 1;
-          return {
-            ...prev,
-            viewsCount: nextCount,
-            views: formatViewsVi(nextCount)
-          };
-        });
-      }, 15000);
-    }
-    return () => clearInterval(viewTicker);
-  }, [isPlaying, activeVideo?.id]);
-
   // Load YouTube iframe API script once
   useEffect(() => {
     if (!window.YT) {
@@ -701,7 +660,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
           showinfo: 0, 
           iv_load_policy: 3, 
           disablekb: 0, 
-          origin: window.location.origin,
+          enablejsapi: 1,
           cc_load_policy: 1,
           cc_lang_pref: "vi",
           hl: "vi"
@@ -740,18 +699,6 @@ const getPlayableVideoId = (rawId = '', item = null) => {
             },
             onStateChange: (e) => {
               setPlayerState(e.data);
-              try {
-                const curData = e.target.getVideoData();
-                if (curData && curData.video_id && curData.video_id !== activeVideoIdRef.current) {
-                  console.log("In-player video change detected:", curData.video_id);
-                  activeVideoIdRef.current = curData.video_id;
-                  handleVideoSelect({
-                    id: curData.video_id,
-                    title: curData.title || "Video YouTube",
-                    channel: { name: curData.author || "Kênh YouTube" }
-                  });
-                }
-              } catch (navErr) {}
               if (e.data === 1) {
                 setIsPlaying(true);
                 updateAudioTracks(e.target);
