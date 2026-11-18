@@ -1,5 +1,5 @@
 import React, { useContext, useState, useEffect, useRef } from "react";
-import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, Sparkles, Bookmark, ListFilter, Settings, Volume2, MessageSquare, Gauge, Settings2, Moon, Mic, ChevronDown, ChevronUp, Maximize2, Play, Pause, X, SkipForward, ListPlus, Flag, Keyboard } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Share2, Download, MoreHorizontal, Sparkles, Bookmark, ListFilter, Settings, Volume2, MessageSquare, Gauge, Settings2, Moon, Mic, ChevronDown, ChevronUp, Maximize2, Play, Pause, X, SkipForward, ListPlus, Flag, Keyboard, Bell } from "lucide-react";
 import { YoutubeContext, getFallbackAvatar, resolveChannelMetaFromVideo, handleThumbnailError, formatViewsVi, formatSubsVi, KNOWN_CHANNEL_SUBS, translateDateVi } from "../context/YoutubeContext";
 import { ShareModal, PlaylistModal, ReportModal, KeyboardShortcutsModal } from "../components/Modals";
 import "./pages.css";
@@ -13,6 +13,49 @@ const getHashtags = (desc, title) => {
   if (t.includes("nhạc") || t.includes("lofi") || t.includes("sing") || t.includes("song") || t.includes("mv")) return "#AmNhac #NhacTre #Trending";
   if (t.includes("game") || t.includes("free fire") || t.includes("liên quân") || t.includes("tng") || t.includes("aog")) return "#TroChoi #Gaming #LienQuan";
   return "#Trending #VietNam #VideoMoiNhat";
+};
+
+const renderDescriptionWithLinks = (text) => {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const hashtagRegex = /(#[\p{L}\p{N}_]+)/gu;
+
+  const lines = text.split("\n");
+  return lines.map((line, lIdx) => {
+    const parts = line.split(urlRegex);
+    return (
+      <React.Fragment key={lIdx}>
+        {parts.map((part, pIdx) => {
+          if (part.match(urlRegex)) {
+            return (
+              <a
+                key={pIdx}
+                href={part}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="description-link"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {part}
+              </a>
+            );
+          }
+          const hashParts = part.split(hashtagRegex);
+          return hashParts.map((hPart, hIdx) => {
+            if (hPart.match(hashtagRegex)) {
+              return (
+                <span key={hIdx} className="description-inline-hashtag">
+                  {hPart}
+                </span>
+              );
+            }
+            return hPart;
+          });
+        })}
+        {lIdx < lines.length - 1 && "\n"}
+      </React.Fragment>
+    );
+  });
 };
 
 const RelatedVideoSkeleton = () => (
@@ -206,7 +249,8 @@ const VideoDetail = () => {
   const [dolbyAtmos, setDolbyAtmos] = useState(true);
   const [stableVolume, setStableVolume] = useState(true);
   const [voiceEnhance, setVoiceEnhance] = useState(false);
-  const [cinemaLight, setCinemaLight] = useState(false);
+  const [cinemaLight, setCinemaLight] = useState(true);
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [captions, setCaptions] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [videoQuality, setVideoQuality] = useState("Tự động (1080p)");
@@ -927,8 +971,11 @@ const getPlayableVideoId = (rawId = '', item = null) => {
         case "t":
         case "T":
           e.preventDefault();
-          setCinemaLight(s => !s);
-          showToast("Đã chuyển chế độ rạp chiếu phim");
+          setIsTheaterMode(s => {
+            const next = !s;
+            showToast(next ? "Đã bật Chế độ rạp chiếu phim (t)" : "Đã tắt Chế độ rạp chiếu phim (t)");
+            return next;
+          });
           break;
         case "i":
         case "I":
@@ -1287,15 +1334,17 @@ const getPlayableVideoId = (rawId = '', item = null) => {
   );
 
   return (
-    <div className={`video-detail-page ${isMiniplayerActive ? "miniplayer-active" : ""}`}>
+    <div className={`video-detail-page ${isTheaterMode ? "theater-mode" : ""} ${isMiniplayerActive ? "miniplayer-active" : ""}`}>
       <div className="video-detail-main">
         {/* ─── Video Player ─── */}
         <div className="video-player-outer-container" style={{ position: "relative", width: "100%" }}>
           {cinemaLight && (
-            <div style={{
-              position: "absolute", top: "-10%", left: "-10%", width: "120%", height: "120%",
-              background: "radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0) 70%)",
-              filter: "blur(60px)", zIndex: 0, pointerEvents: "none", borderRadius: "50%"
+            <div className="video-ambient-glow" style={{
+              position: "absolute", top: "-15%", left: "-10%", width: "120%", height: "130%",
+              background: "radial-gradient(ellipse at center, rgba(120, 80, 240, 0.22) 0%, rgba(255, 60, 60, 0.16) 35%, rgba(0, 180, 255, 0.12) 60%, rgba(0,0,0,0) 75%)",
+              filter: "blur(75px)", zIndex: 0, pointerEvents: "none", borderRadius: "24px",
+              opacity: isPlaying ? 0.9 : 0.45,
+              transition: "opacity 0.5s ease"
             }} />
           )}
 
@@ -1486,14 +1535,30 @@ const getPlayableVideoId = (rawId = '', item = null) => {
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z" /></svg>
                       </button>
 
-                      <button className="custom-control-btn" onClick={togglePiP} title="Trình thu nhỏ">
+                      <button className="custom-control-btn" onClick={togglePiP} title="Trình thu nhỏ (i)">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
                           <rect x="3" y="3" width="18" height="18" rx="2" />
                           <rect x="12" y="12" width="8" height="6" rx="1" fill="currentColor" />
                         </svg>
                       </button>
 
-                      <button className="custom-control-btn" onClick={toggleFullscreen} title="Toàn màn hình">
+                      <button
+                        className={`custom-control-btn ${isTheaterMode ? "active" : ""}`}
+                        onClick={() => {
+                          setIsTheaterMode(s => {
+                            const next = !s;
+                            showToast(next ? "Đã bật Chế độ rạp chiếu phim (t)" : "Đã tắt Chế độ rạp chiếu phim (t)");
+                            return next;
+                          });
+                        }}
+                        title={isTheaterMode ? "Chế độ mặc định (t)" : "Chế độ rạp chiếu phim (t)"}
+                      >
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                          <path d="M19 6H5c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 10H5V8h14v8z"/>
+                        </svg>
+                      </button>
+
+                      <button className="custom-control-btn" onClick={toggleFullscreen} title="Toàn màn hình (f)">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z" /></svg>
                       </button>
                     </div>
@@ -1768,8 +1833,16 @@ const getPlayableVideoId = (rawId = '', item = null) => {
                 <button
                   className={`subscribe-btn ${isSubscribed ? "subscribed" : ""}`}
                   onClick={() => chMeta.id && toggleSubscribe(chMeta.id)}
+                  style={isSubscribed ? { display: "inline-flex", alignItems: "center", gap: "6px" } : {}}
                 >
-                  {isSubscribed ? "Đã đăng ký" : "Đăng ký"}
+                  {isSubscribed ? (
+                    <>
+                      <Bell size={16} />
+                      <span>Đã đăng ký</span>
+                    </>
+                  ) : (
+                    "Đăng ký"
+                  )}
                 </button>
               </div>
             );
@@ -1867,7 +1940,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
               )}
             </div>
             <p className="description-text" style={{ whiteSpace: "pre-wrap" }}>
-              {currentVideoState.description}
+              {renderDescriptionWithLinks(currentVideoState.description)}
             </p>
             {/* Channel description shown when expanded */}
             {currentVideoState.channel?.description && isDescExpanded && (

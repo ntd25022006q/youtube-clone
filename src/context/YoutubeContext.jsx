@@ -1485,6 +1485,13 @@ export const YoutubeProvider = ({ children }) => {
       const list = params.get("list");
       if (v) return { page: "watch", videoId: v, playlistId: list };
       if (list) return { page: "watch", videoId: list, playlistId: list };
+      const fallbackVidId = "yuuWdm5tBD0";
+      try {
+        if (typeof window !== "undefined") {
+          window.history.replaceState({ page: "watch", video: { id: fallbackVidId } }, "", `/watch?v=${fallbackVidId}`);
+        }
+      } catch (e) {}
+      return { page: "watch", videoId: fallbackVidId, playlistId: null };
     } else if (path.startsWith("/channel")) {
       const parts = path.split("/").filter(Boolean);
       let id = (parts[1] || params.get("id") || "").trim();

@@ -340,6 +340,7 @@
   gap: 24px;
   max-width: 1750px;
   margin: 0 auto;
+  transition: all 0.3s ease;
 }
 
 @media (min-width: 1012px) {
@@ -352,6 +353,45 @@
   .video-detail-page {
     grid-template-columns: 1fr 400px;
   }
+}
+
+/* ─── Theater Mode (Chế độ rạp chiếu phim) ─── */
+.video-detail-page.theater-mode {
+  display: grid;
+  grid-template-columns: 1fr;
+  max-width: 1750px;
+  margin: 0 auto;
+  gap: 24px;
+}
+
+@media (min-width: 1012px) {
+  .video-detail-page.theater-mode {
+    grid-template-columns: 1fr 360px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .video-detail-page.theater-mode {
+    grid-template-columns: 1fr 400px;
+  }
+}
+
+.video-detail-page.theater-mode .video-player-outer-container {
+  grid-column: 1 / -1;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.video-detail-page.theater-mode .video-player-wrapper {
+  max-width: 100%;
+  width: 100%;
+  max-height: 82vh;
+  border-radius: 0;
 }
 
 .video-detail-main {
@@ -568,6 +608,27 @@
   font-weight: 500;
   font-size: 13px;
   padding: 0;
+}
+
+.description-link {
+  color: #3ea6ff;
+  text-decoration: none;
+  cursor: pointer;
+  word-break: break-all;
+}
+
+.description-link:hover {
+  text-decoration: underline;
+}
+
+.description-inline-hashtag {
+  color: #3ea6ff;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.description-inline-hashtag:hover {
+  text-decoration: underline;
 }
 
 /* Comments section */
