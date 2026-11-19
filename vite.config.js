@@ -256,6 +256,7 @@ const apiMiddlewaresPlugin = () => ({
                 channelId: info.channel_id || info.uploader_id,
                 subCount: info.channel_follower_count || 0,
                 viewCount: info.view_count || 0,
+                commentCount: info.comment_count || 0,
                 uploadDate: info.upload_date,
                 likeCount: info.like_count || 0,
                 description: (info.description || '').replace(/[\uFFFC\uFFFD\uFEFF]/g, '').trim()
@@ -763,16 +764,17 @@ const apiMiddlewaresPlugin = () => ({
       try {
         const parsedUrl = new URL(req.url, 'http://localhost');
         const videoId = (parsedUrl.searchParams.get('v') || parsedUrl.searchParams.get('id') || '').trim();
+        const continuation = (parsedUrl.searchParams.get('continuation') || '').trim();
         if (!videoId) {
           res.setHeader('Content-Type', 'application/json');
           return res.end(JSON.stringify({ success: false, comments: [] }));
         }
-        const cacheKey = videoId.toLowerCase();
+        const cacheKey = continuation ? `${videoId}_${continuation}` : videoId.toLowerCase();
         if (ytCommentsCache.has(cacheKey)) {
           res.setHeader('Content-Type', 'application/json');
           return res.end(JSON.stringify(ytCommentsCache.get(cacheKey)));
         }
-        const commData = await getCommentsInnerTube(videoId);
+        const commData = await getCommentsInnerTube(videoId, continuation);
         ytCommentsCache.set(cacheKey, commData);
         res.setHeader('Content-Type', 'application/json');
         return res.end(JSON.stringify(commData));

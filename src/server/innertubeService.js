@@ -944,9 +944,16 @@ export async function getWatchInnerTube(videoId) {
       }
     }
 
+    let commentCount = 0;
+    let commentCountText = '';
     const comments = [];
     try {
       const commentsData = await yt.getComments(videoId);
+      if (commentsData.header?.count?.text) {
+        commentCountText = commentsData.header.count.text;
+        const parsed = parseInt(commentCountText.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(parsed) && parsed > 0) commentCount = parsed;
+      }
       for (const cItem of commentsData.contents || []) {
         const c = cItem.comment;
         if (c) {
@@ -959,6 +966,9 @@ export async function getWatchInnerTube(videoId) {
             uploadedAt: sanitizeTimeVi(c.published_time || c.published?.text || c.published_time_text || '', c.comment_id || c.author?.name || 'comm')
           });
         }
+      }
+      if (comments.length > 0 && commentCount === 0) {
+        commentCount = comments.length;
       }
     } catch (commErr) {
       // comments optional
@@ -986,6 +996,8 @@ export async function getWatchInnerTube(videoId) {
       uploadedAt: sanitizeTimeVi(info.primary_info?.published?.text || info.primary_info?.relative_date?.text, targetVidId),
       likeCount: info.primary_info?.menu?.top_level_buttons?.[0]?.like_button?.like_count_entity?.like_count_if_liked || '123K',
       likes: '123K',
+      commentCount,
+      commentCountText,
       channel: {
         id: secOwner.author?.id || basic.channel?.id || '',
         name: secOwner.author?.name || basic.author || 'Kênh YouTube',
@@ -1005,32 +1017,73 @@ export async function getWatchInnerTube(videoId) {
   }
 }
 
+// Active comment continuation feeds cache
+const activeCommentFeeds = new Map();
+
 // 2b. Standalone comments endpoint handler
-export async function getCommentsInnerTube(videoId) {
+export async function getCommentsInnerTube(videoId, continuationKey = null) {
   const yt = await getInnertube();
   const comments = [];
+  let commentCount = 0;
+  let commentCountText = '';
+  let nextContinuation = null;
+
   try {
-    const commentsData = await yt.getComments(videoId);
-    for (const cItem of commentsData.contents || []) {
-      const c = cItem.comment;
-      if (c) {
-        let authThumb = c.author?.thumbnails?.[0]?.url || '';
-        if (authThumb && authThumb.startsWith('//')) authThumb = `https:${authThumb}`;
-        comments.push({
-          id: c.comment_id || String(Math.random()),
-          author: c.author?.name || 'Người dùng',
-          avatar: authThumb,
-          text: c.content?.text || '',
-          likes: c.vote_count ? parseInt(String(c.vote_count).replace(/[^0-9]/g, '')) || 0 : 0,
-          uploadedAt: sanitizeTimeVi(c.published_time || c.published?.text || c.published_time_text || '', c.comment_id || c.author?.name || 'comm'),
-          isCreatorHearted: Boolean(c.is_hearted)
-        });
+    let commentsData = null;
+    if (continuationKey && activeCommentFeeds.has(continuationKey)) {
+      const parentFeed = activeCommentFeeds.get(continuationKey);
+      if (parentFeed && typeof parentFeed.getContinuation === 'function') {
+        commentsData = await parentFeed.getContinuation();
+      }
+    }
+
+    if (!commentsData) {
+      commentsData = await yt.getComments(videoId);
+    }
+
+    if (commentsData) {
+      if (commentsData.header?.count?.text) {
+        commentCountText = commentsData.header.count.text;
+        const parsed = parseInt(commentCountText.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          commentCount = parsed;
+        }
+      }
+
+      for (const cItem of commentsData.contents || []) {
+        const c = cItem.comment;
+        if (c) {
+          let authThumb = c.author?.thumbnails?.[0]?.url || '';
+          if (authThumb && authThumb.startsWith('//')) authThumb = `https:${authThumb}`;
+          comments.push({
+            id: c.comment_id || String(Math.random()),
+            author: c.author?.name || 'Người dùng',
+            avatar: authThumb,
+            text: c.content?.text || '',
+            likes: c.vote_count ? parseInt(String(c.vote_count).replace(/[^0-9]/g, '')) || 0 : 0,
+            uploadedAt: sanitizeTimeVi(c.published_time || c.published?.text || c.published_time_text || '', c.comment_id || c.author?.name || 'comm'),
+            isCreatorHearted: Boolean(c.is_hearted)
+          });
+        }
+      }
+
+      if (comments.length > 0 && commentCount === 0) {
+        commentCount = comments.length;
+      }
+
+      if (commentsData.has_continuation && typeof commentsData.getContinuation === 'function') {
+        nextContinuation = `cont_${videoId}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+        activeCommentFeeds.set(nextContinuation, commentsData);
+        if (activeCommentFeeds.size > 200) {
+          const firstKey = activeCommentFeeds.keys().next().value;
+          activeCommentFeeds.delete(firstKey);
+        }
       }
     }
   } catch (e) {
     console.warn(`InnerTube comments for ${videoId} warning:`, e.message);
   }
-  return { success: true, comments };
+  return { success: true, comments, commentCount, commentCountText, continuation: nextContinuation };
 }
 
 // 3. Channel endpoint handler (Full channel details, videos, shorts, playlists, posts, shelves, about)

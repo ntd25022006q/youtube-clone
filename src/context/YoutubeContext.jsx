@@ -2704,7 +2704,12 @@ export const YoutubeProvider = ({ children }) => {
         const commData = await ytCommRes.json();
         if (commData && Array.isArray(commData.comments) && commData.comments.length > 0) {
           fetchedComments = commData.comments;
-          rawApiCommentCount = commData.comments.length * 15;
+          commentsContinuation = commData.continuation || null;
+          if (typeof commData.commentCount === 'number' && commData.commentCount > 0) {
+            rawApiCommentCount = commData.commentCount;
+          } else {
+            rawApiCommentCount = commData.comments.length;
+          }
         }
       }
     } catch (e) {
@@ -2789,11 +2794,11 @@ export const YoutubeProvider = ({ children }) => {
       realisticCount = rawApiCommentCount;
     } else if (currentVideoObj?.commentCount && Number(currentVideoObj.commentCount) > 0) {
       realisticCount = Number(currentVideoObj.commentCount);
+    } else if (fetchedComments.length > 0) {
+      // Exact authentic number matching real YouTube: "có bao nhiêu hiển thị từng đó là được"
+      realisticCount = fetchedComments.length;
     } else {
-      let seed = 0;
-      for (let c of String(videoId || "vid")) seed = c.charCodeAt(0) + ((seed << 5) - seed);
-      seed = Math.abs(seed);
-      realisticCount = 450 + (seed % 1400); // 450 to 1850 comments
+      realisticCount = 0;
     }
 
     setActiveVideo(prev => {
@@ -2919,6 +2924,7 @@ export const YoutubeProvider = ({ children }) => {
               views: vData.viewCount ? formatViewsVi(vData.viewCount) : prev.views,
               uploadedAt: relTime || prev.uploadedAt,
               likes: vData.likeCount ? formatLikesVi(vData.likeCount) : prev.likes,
+              commentCount: vData.commentCount ? vData.commentCount : prev.commentCount,
               channel: {
                 ...prev.channel,
                 name: chName || prev.channel?.name,
@@ -3931,7 +3937,21 @@ export const YoutubeProvider = ({ children }) => {
     let nextContinuation = null;
 
     if (continuation) {
-      for (const cInst of FALLBACK_INSTANCES) {
+      try {
+        const ytRes = await fetch(`/api/youtube-comments?id=${encodeURIComponent(videoId)}&continuation=${encodeURIComponent(continuation)}`);
+        if (ytRes.ok) {
+          const commData = await ytRes.json();
+          if (commData && Array.isArray(commData.comments) && commData.comments.length > 0) {
+            newComments = commData.comments;
+            nextContinuation = commData.continuation || null;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch continuation comments via InnerTube:", e);
+      }
+
+      if (newComments.length === 0) {
+        for (const cInst of FALLBACK_INSTANCES) {
         try {
           const url = `${cInst}/api/v1/comments/${videoId}?continuation=${encodeURIComponent(continuation)}&hl=vi`;
           const resp = await fetch(url, { headers: { "Accept": "application/json" } });
@@ -3965,6 +3985,7 @@ export const YoutubeProvider = ({ children }) => {
         }
       }
     }
+  }
 
     if (newComments.length === 0) {
       // Dynamic fallback comments for rich infinite discussion reading
