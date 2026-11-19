@@ -403,6 +403,8 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16/9;
+  max-height: calc(100vh - 169px);
+  max-width: calc((100vh - 169px) * 16 / 9);
   border-radius: 12px;
   overflow: hidden;
   background-color: #000;

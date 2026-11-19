@@ -780,14 +780,48 @@ export async function searchInnerTube(query) {
         }
       });
     } else if (item.type === 'Channel' && !channelCard) {
+      let chAv = item.author?.thumbnails?.[0]?.url || item.thumbnails?.[0]?.url || '';
+      if (chAv && chAv.startsWith('//')) chAv = `https:${chAv}`;
+
+      let chHandle = item.author?.endpoint?.payload?.canonicalBaseUrl?.replace(/^\//, '') ||
+                     item.handle?.text ||
+                     (item.subscriber_count?.text?.startsWith('@') ? item.subscriber_count.text : '') ||
+                     `@${(item.author?.name || item.name || item.title?.text || '').toLowerCase().replace(/\s+/g, '')}`;
+
+      let chSubs = '';
+      let chVideos = '';
+      const count1 = item.video_count?.text || '';
+      const count2 = item.subscriber_count?.text || '';
+      const subText = item.subscribers?.text || '';
+
+      if (count1.includes('người đăng ký') || count1.includes('subscribers')) {
+        chSubs = count1.replace(/subscribers/i, 'người đăng ký').replace(/M/i, ' Tr');
+      } else if (count2.includes('người đăng ký') || count2.includes('subscribers')) {
+        chSubs = count2.replace(/subscribers/i, 'người đăng ký').replace(/M/i, ' Tr');
+      } else if (subText) {
+        chSubs = subText;
+      }
+
+      if (count1.includes('video')) {
+        chVideos = count1;
+      } else if (count2.includes('video')) {
+        chVideos = count2;
+      } else if (item.video_count?.text && !item.video_count.text.includes('người đăng ký')) {
+        chVideos = item.video_count.text;
+      }
+
+      const chDesc = item.description_snippet?.text || item.description?.text || '';
+      const isVerified = item.author?.is_verified ?? true;
+
       channelCard = {
-        id: item.id,
-        name: item.author?.name || item.title?.text || '',
-        handle: item.handle?.text || `@${item.id}`,
-        subscribers: item.subscribers?.text || '',
-        videoCount: item.video_count?.text || '',
-        avatar: item.thumbnails?.[0]?.url || '',
-        description: item.description?.text || ''
+        id: item.id || item.author?.id || '',
+        name: item.author?.name || item.title?.text || 'Kênh YouTube',
+        handle: chHandle,
+        subscribers: chSubs,
+        videoCount: chVideos,
+        avatar: chAv,
+        description: chDesc,
+        isVerified
       };
     }
   }

@@ -720,10 +720,20 @@ const SearchResults = () => {
                           </h2>
                           <p className="search-channel-meta">
                             <span>{item.handle}</span>
-                            <span className="dot-separator">•</span>
-                            <span>{item.subscribers}</span>
+                            {item.subscribers && (
+                              <>
+                                <span className="dot-separator">•</span>
+                                <span>{item.subscribers}</span>
+                              </>
+                            )}
+                            {item.videoCount && (
+                              <>
+                                <span className="dot-separator">•</span>
+                                <span>{item.videoCount}</span>
+                              </>
+                            )}
                           </p>
-                          <p className="search-channel-desc">{item.description}</p>
+                          {item.description && <p className="search-channel-desc">{item.description}</p>}
                         </div>
                         <div className="search-channel-action">
                           <button
@@ -898,8 +908,8 @@ const SearchResults = () => {
           )}
         </div>
 
-        {/* Right Sidebar Panel */}
-        {!loading && searchResults.length > 0 && (
+        {/* Right Sidebar Panel — Only for official artist search queries matching YouTube */}
+        {!loading && searchResults.length > 0 && officialCard && (
           <div className="search-results-right">
             {featuredChannel && (
               <div className="artist-right-panel-card">
@@ -916,9 +926,11 @@ const SearchResults = () => {
                 <p className="artist-right-handle">
                   {featuredChannel.handle || `@${featuredChannel.name.toLowerCase().replace(/\s+/g, "")}`}
                 </p>
-                <p className="artist-right-subs">
-                  {featuredChannel.subscribers || "Nghệ sĩ chính thức"}
-                </p>
+                {featuredChannel.subscribers && (
+                  <p className="artist-right-subs">
+                    {featuredChannel.subscribers}
+                  </p>
+                )}
                 <button 
                   className={`subscribe-btn search-sub-btn ${subscriptions.includes(featuredChannel.id) ? "subscribed" : ""}`}
                   onClick={() => toggleSubscribe(featuredChannel.id)}

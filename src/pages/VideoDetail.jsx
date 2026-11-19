@@ -1334,7 +1334,9 @@ const getPlayableVideoId = (rawId = '', item = null) => {
             position: "relative",
             zIndex: 2,
             aspectRatio: "16/9",
-            width: "100%"
+            width: "100%",
+            maxHeight: "calc(100vh - 169px)",
+            maxWidth: "calc((100vh - 169px) * 16 / 9)"
           }}>
 
             {playerServer === "youtube" ? (
