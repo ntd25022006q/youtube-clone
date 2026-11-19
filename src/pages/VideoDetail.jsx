@@ -502,6 +502,170 @@ const getPlayableVideoId = (rawId = '', item = null) => {
   const [seekRipple, setSeekRipple] = useState(null);
   const clickTimeoutRef = useRef(null);
   const playerSlotRef = useRef(null);
+  const progressBarRef = useRef(null);
+  const isDraggingProgress = useRef(false);
+
+  // ---- Player control functions ----
+  const togglePlay = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (showSettingsMenu) {
+      setShowSettingsMenu(false);
+      return;
+    }
+    if (!player) return;
+    if (isPlaying) { player.pauseVideo(); setIsPlaying(false); }
+    else { player.playVideo(); setIsPlaying(true); }
+  };
+  const toggleMute = () => {
+    if (!player) return;
+    if (isMuted) {
+      player.unMute();
+      setIsMuted(false);
+      player.setVolume(volume || 100);
+    } else {
+      player.mute();
+      setIsMuted(true);
+    }
+  };
+  const handleVolumeChange = (e) => {
+    const newVol = parseInt(e.target.value, 10);
+    setVolume(newVol);
+    if (player && player.setVolume) {
+      player.setVolume(newVol);
+    }
+    if (newVol === 0) {
+      setIsMuted(true);
+      if (player && player.mute) player.mute();
+    } else {
+      setIsMuted(false);
+      if (player && player.unMute) {
+        player.unMute();
+        player.setVolume(newVol);
+      }
+    }
+  };
+  const toggleCC = () => {
+    if (!player) return;
+    const next = !captions; 
+    setCaptions(next);
+    
+    if (next) {
+      try {
+        const tracklist = player.getOption("captions", "tracklist") || [];
+        const hasNativeVi = tracklist.some(t => t.languageCode === "vi");
+        
+        if (hasNativeVi) {
+          player.setOption("captions", "track", { languageCode: "vi" });
+        } else {
+          // Fallback to auto-translate from English or default track to Vietnamese
+          const baseTrack = tracklist.find(t => t.languageCode === "en") || tracklist.find(t => t.isDefault) || tracklist[0];
+          if (baseTrack) {
+            player.setOption("captions", "track", { 
+              languageCode: baseTrack.languageCode, 
+              translationLanguage: "vi" 
+            });
+          } else {
+            player.setOption("captions", "track", { languageCode: "vi" });
+          }
+        }
+      } catch (e) {
+        try { player.setOption("captions", "track", { languageCode: "vi" }); } catch (err) {}
+      }
+      showToast("Đã bật phụ đề tiếng Việt (Tự động dịch)");
+    } else {
+      try { player.setOption("captions", "track", {}); } catch (e) {}
+      showToast("Đã tắt phụ đề");
+    }
+  };
+  const toggleFullscreen = () => {
+    const el = document.querySelector(".video-player-wrapper");
+    if (!el) return;
+    if (!document.fullscreenElement) el.requestFullscreen().catch(() => {});
+    else document.exitFullscreen();
+  };
+  const handleExpand = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setIsMiniplayerActive(false);
+    navigateTo("watch");
+  };
+
+  const handleClose = (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    setIsMiniplayerActive(false);
+    setTimeout(() => setActiveVideo(null), 50);
+  };
+
+  const togglePiP = () => {
+    if (!activeVideo) return;
+    setIsMiniplayerActive(true);
+    navigateTo(backgroundPage || "home");
+  };
+
+  const seekToTime = (t) => {
+    const validTime = Math.max(0, Math.min(duration || 0, t));
+    setCurrentTime(validTime);
+    if (player && typeof player.seekTo === "function") {
+      player.seekTo(validTime, true);
+    }
+  };
+
+  const handleProgressMouseDown = (e) => {
+    e.stopPropagation();
+    if (!duration || !progressBarRef.current) return;
+    isDraggingProgress.current = true;
+
+    const calcTime = (clientX) => {
+      const rect = progressBarRef.current.getBoundingClientRect();
+      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      return pct * duration;
+    };
+
+    seekToTime(calcTime(e.clientX));
+
+    const onMouseMove = (moveEv) => {
+      if (!isDraggingProgress.current) return;
+      const t = calcTime(moveEv.clientX);
+      setCurrentTime(t);
+    };
+
+    const onMouseUp = (upEv) => {
+      if (isDraggingProgress.current) {
+        const t = calcTime(upEv.clientX);
+        seekToTime(t);
+        isDraggingProgress.current = false;
+      }
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  const handleProgressClick = (e) => {
+    e.stopPropagation();
+    if (!duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    seekToTime(pct * duration);
+  };
+  const playNextVideo = () => {
+    if (activePlaylist && activePlaylist.items && activePlaylist.items.length > 0) {
+      playNextPlaylistItem();
+      return;
+    }
+    if (relatedVideos.length > 0) handleVideoSelect(relatedVideos[0]);
+    else showToast("Không có video tiếp theo");
+  };
+  const playPreviousVideo = () => {
+    if (activePlaylist && activePlaylist.items && activePlaylist.items.length > 0) {
+      playPrevPlaylistItem();
+      return;
+    }
+    const idx = watchHistory.findIndex(v => v.id === activeVideo?.id);
+    if (idx !== -1 && idx + 1 < watchHistory.length) handleVideoSelect(watchHistory[idx + 1]);
+    else showToast("Không có video trước đó trong lịch sử");
+  };
 
   const handlePlayerMaskClick = (e) => {
     if (isMiniplayerActive) return;
@@ -1037,180 +1201,12 @@ const getPlayableVideoId = (rawId = '', item = null) => {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [player, duration, isPlaying, volume, isMuted, playbackSpeed]);
 
-  // ---- Guard ----
-  if (!activeVideo || !activeVideo.id) return null;
-
-  const chMetaHeader = resolveChannelMetaFromVideo(activeVideo);
-  const effectiveChannelId = chMetaHeader.id || activeVideo.channel?.id || chMetaHeader.name || activeVideo.channel?.name || "";
+  const chMetaHeader = activeVideo ? resolveChannelMetaFromVideo(activeVideo) : {};
+  const effectiveChannelId = chMetaHeader.id || activeVideo?.channel?.id || chMetaHeader.name || activeVideo?.channel?.name || "";
   const isSubscribed = Array.isArray(subscriptions) && effectiveChannelId
     ? (subscriptions.includes(effectiveChannelId) || (chMetaHeader.name && subscriptions.includes(chMetaHeader.name)) || (chMetaHeader.id && subscriptions.includes(chMetaHeader.id)))
     : false;
-  const isLiked = Array.isArray(likedVideos) ? likedVideos.includes(activeVideo.id) : false;
-
-  // ---- Player control functions ----
-  const togglePlay = (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (showSettingsMenu) {
-      setShowSettingsMenu(false);
-      return;
-    }
-    if (!player) return;
-    if (isPlaying) { player.pauseVideo(); setIsPlaying(false); }
-    else { player.playVideo(); setIsPlaying(true); }
-  };
-  const toggleMute = () => {
-    if (!player) return;
-    if (isMuted) {
-      player.unMute();
-      setIsMuted(false);
-      player.setVolume(volume || 100);
-    } else {
-      player.mute();
-      setIsMuted(true);
-    }
-  };
-  const handleVolumeChange = (e) => {
-    const newVol = parseInt(e.target.value, 10);
-    setVolume(newVol);
-    if (player && player.setVolume) {
-      player.setVolume(newVol);
-    }
-    if (newVol === 0) {
-      setIsMuted(true);
-      if (player && player.mute) player.mute();
-    } else {
-      setIsMuted(false);
-      if (player && player.unMute) {
-        player.unMute();
-        player.setVolume(newVol);
-      }
-    }
-  };
-  const toggleCC = () => {
-    if (!player) return;
-    const next = !captions; 
-    setCaptions(next);
-    
-    if (next) {
-      try {
-        const tracklist = player.getOption("captions", "tracklist") || [];
-        const hasNativeVi = tracklist.some(t => t.languageCode === "vi");
-        
-        if (hasNativeVi) {
-          player.setOption("captions", "track", { languageCode: "vi" });
-        } else {
-          // Fallback to auto-translate from English or default track to Vietnamese
-          const baseTrack = tracklist.find(t => t.languageCode === "en") || tracklist.find(t => t.isDefault) || tracklist[0];
-          if (baseTrack) {
-            player.setOption("captions", "track", { 
-              languageCode: baseTrack.languageCode, 
-              translationLanguage: "vi" 
-            });
-          } else {
-            player.setOption("captions", "track", { languageCode: "vi" });
-          }
-        }
-      } catch (e) {
-        try { player.setOption("captions", "track", { languageCode: "vi" }); } catch (err) {}
-      }
-      showToast("Đã bật phụ đề tiếng Việt (Tự động dịch)");
-    } else {
-      try { player.setOption("captions", "track", {}); } catch (e) {}
-      showToast("Đã tắt phụ đề");
-    }
-  };
-  const toggleFullscreen = () => {
-    const el = document.querySelector(".video-player-wrapper");
-    if (!el) return;
-    if (!document.fullscreenElement) el.requestFullscreen().catch(() => {});
-    else document.exitFullscreen();
-  };
-  const handleExpand = (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    setIsMiniplayerActive(false);
-    navigateTo("watch");
-  };
-
-  const handleClose = (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    setIsMiniplayerActive(false);
-    // Delay to allow animation, then clear the active video
-    setTimeout(() => setActiveVideo(null), 50);
-  };
-
-  const togglePiP = () => {
-    if (!activeVideo) return;
-    setIsMiniplayerActive(true);
-    navigateTo(backgroundPage || "home");
-  };
-  const progressBarRef = useRef(null);
-  const isDraggingProgress = useRef(false);
-
-  const seekToTime = (t) => {
-    const validTime = Math.max(0, Math.min(duration || 0, t));
-    setCurrentTime(validTime);
-    if (player && typeof player.seekTo === "function") {
-      player.seekTo(validTime, true);
-    }
-  };
-
-  const handleProgressMouseDown = (e) => {
-    e.stopPropagation();
-    if (!duration || !progressBarRef.current) return;
-    isDraggingProgress.current = true;
-
-    const calcTime = (clientX) => {
-      const rect = progressBarRef.current.getBoundingClientRect();
-      const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-      return pct * duration;
-    };
-
-    seekToTime(calcTime(e.clientX));
-
-    const onMouseMove = (moveEv) => {
-      if (!isDraggingProgress.current) return;
-      const t = calcTime(moveEv.clientX);
-      setCurrentTime(t);
-    };
-
-    const onMouseUp = (upEv) => {
-      if (isDraggingProgress.current) {
-        const t = calcTime(upEv.clientX);
-        seekToTime(t);
-        isDraggingProgress.current = false;
-      }
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-  };
-
-  const handleProgressClick = (e) => {
-    e.stopPropagation();
-    if (!duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    seekToTime(pct * duration);
-  };
-  const playNextVideo = () => {
-    if (activePlaylist && activePlaylist.items && activePlaylist.items.length > 0) {
-      playNextPlaylistItem();
-      return;
-    }
-    if (relatedVideos.length > 0) handleVideoSelect(relatedVideos[0]);
-    else showToast("Không có video tiếp theo");
-  };
-  const playPreviousVideo = () => {
-    if (activePlaylist && activePlaylist.items && activePlaylist.items.length > 0) {
-      playPrevPlaylistItem();
-      return;
-    }
-    const idx = watchHistory.findIndex(v => v.id === activeVideo.id);
-    if (idx !== -1 && idx + 1 < watchHistory.length) handleVideoSelect(watchHistory[idx + 1]);
-    else showToast("Không có video trước đó trong lịch sử");
-  };
+  const isLiked = Array.isArray(likedVideos) && activeVideo ? likedVideos.includes(activeVideo.id) : false;
 
   // ---- Other handlers ----
   const toggleLikeComment = (id) => {
@@ -1321,6 +1317,8 @@ const getPlayableVideoId = (rawId = '', item = null) => {
     if (!a.isOwnComment && b.isOwnComment) return 1;
     return sortOrder === "new" ? 0 : (b.likes || 0) - (a.likes || 0);
   });
+
+  if (!activeVideo || !activeVideo.id) return null;
 
   return (
     <div className={`video-detail-page ${isTheaterMode ? "theater-mode" : ""} ${isMiniplayerActive ? "miniplayer-active" : ""}`}>

@@ -120,7 +120,7 @@ const Playlists = () => {
                   />
                   <div className="playlist-item-info">
                     <h4>{video.title}</h4>
-                    <p>{video.channel?.name}</p>
+                    <p>{video.channel?.name || video.channelTitle || video.author || (typeof video.channel === 'string' ? video.channel : "YouTube")}</p>
                     <span>{video.views} • {video.uploadedAt}</span>
                   </div>
                   <button

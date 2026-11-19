@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'chess-trainer/**']),
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -25,8 +25,11 @@ export default defineConfig([
       'no-inner-declarations': 'off',
       'react-refresh/only-export-components': 'off',
       'react-hooks/exhaustive-deps': 'off',
-      'react-hooks/rules-of-hooks': 'off',
+      'react-hooks/rules-of-hooks': 'error',
       'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/purity': 'off',
+      'react-hooks/immutability': 'off',
+      'preserve-caught-error': 'off',
       'no-dupe-keys': 'off',
       'no-useless-assignment': 'off',
       'no-undef': 'off',

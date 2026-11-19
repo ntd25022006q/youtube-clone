@@ -50,7 +50,7 @@ const History = () => {
               </div>
               <div className="history-info">
                 <h3 className="history-title">{video.title}</h3>
-                <p className="history-channel">{video.channel?.name}</p>
+                <p className="history-channel">{video.channel?.name || video.channelTitle || video.author || (typeof video.channel === 'string' ? video.channel : "YouTube")}</p>
                 <div className="history-stats">
                   <span>{video.views}</span>
                   <span className="dot-separator">{"•"}</span>

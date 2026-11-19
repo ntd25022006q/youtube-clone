@@ -10,6 +10,36 @@ const Subscriptions = () => {
   const [extraVideos, setExtraVideos] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  // Videos from currently loaded state that match subscribed channels
+  const subscribedFromState = (videos || []).filter(
+    (video) => video && video.channel && subscriptions && subscriptions.includes(video.channel.id)
+  );
+
+  // Fetch fresh videos from subscribed channels not covered by state
+  useEffect(() => {
+    if (!currentUser || !subscriptions || subscriptions.length === 0) return;
+    const missingChannels = subscriptions.filter(
+      chId => !subscribedFromState.some(v => v.channel?.id === chId)
+    );
+    if (missingChannels.length === 0) return;
+
+    setLoading(true);
+    Promise.allSettled(
+      missingChannels.slice(0, 5).map(chId =>
+        fetchFromInvidious(`/api/v1/channels/${chId}/videos`, res => res && Array.isArray(res.videos))
+          .then(({ data }) => {
+            if (!data || !Array.isArray(data.videos)) return [];
+            return data.videos.slice(0, 4);
+          })
+          .catch(() => [])
+      )
+    ).then(results => {
+      const all = results.flatMap(r => r.status === "fulfilled" ? r.value : []);
+      setExtraVideos(all);
+      setLoading(false);
+    });
+  }, [currentUser, (subscriptions || []).join(",")]);
+
   if (!currentUser) {
     return (
       <div className="subscriptions-page" style={{ padding: "60px 24px", minHeight: "100vh", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -22,36 +52,6 @@ const Subscriptions = () => {
       </div>
     );
   }
-
-  // Videos from currently loaded state that match subscribed channels
-  const subscribedFromState = videos.filter(
-    (video) => video && video.channel && subscriptions.includes(video.channel.id)
-  );
-
-  // Fetch fresh videos from subscribed channels not covered by state
-  useEffect(() => {
-    if (subscriptions.length === 0) return;
-    const missingChannels = subscriptions.filter(
-      chId => !subscribedFromState.some(v => v.channel.id === chId)
-    );
-    if (missingChannels.length === 0) return;
-
-    setLoading(true);
-    Promise.allSettled(
-      missingChannels.slice(0, 5).map(chId =>
-        fetchFromInvidious(`/api/v1/channels/${chId}/videos`, res => res && Array.isArray(res.videos))
-          .then(({ data, instance }) => {
-            if (!data || !Array.isArray(data.videos)) return [];
-            return data.videos.slice(0, 4);
-          })
-          .catch(() => [])
-      )
-    ).then(results => {
-      const all = results.flatMap(r => r.status === "fulfilled" ? r.value : []);
-      setExtraVideos(all);
-      setLoading(false);
-    });
-  }, [subscriptions.join(",")]);
 
   const allSubscribedVideos = [
     ...subscribedFromState,
