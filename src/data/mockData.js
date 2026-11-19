@@ -781,6 +781,7 @@ export const mockCategories = [
   "Tất cả",
   "Âm nhạc",
   "Trò chơi",
+  "Cờ vua / Chess",
   "Tin tức",
   "Trực tiếp",
   "Bóng đá",

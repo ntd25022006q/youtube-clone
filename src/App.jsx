@@ -14,6 +14,7 @@ import YourVideos from "./pages/YourVideos";
 import Downloads from "./pages/Downloads";
 import Shorts from "./pages/Shorts";
 import Subscriptions from "./pages/Subscriptions";
+import ChessModal from "./components/ChessModal";
 import { YoutubeContext, YoutubeProvider } from "./context/YoutubeContext";
 import { User, Library, Clock, Film, Download, History as HistoryIcon, ThumbsUp, Tv } from "lucide-react";
 import "./App.css";
@@ -91,7 +92,20 @@ const LoadingBar = () => {
 };
 
 function AppContent() {
-  const { activePage, isSidebarExpanded, activeVideo, searchQuery, isMiniplayerActive, backgroundPage, toast, isNativeMode } = useContext(YoutubeContext);
+  const {
+    activePage,
+    isSidebarExpanded,
+    activeVideo,
+    searchQuery,
+    isMiniplayerActive,
+    backgroundPage,
+    toast,
+    isNativeMode,
+    isChessModalOpen,
+    setIsChessModalOpen,
+    isChessMinimized,
+    setIsChessMinimized,
+  } = useContext(YoutubeContext);
 
   // Update browser document tab title dynamically
   useEffect(() => {
@@ -267,6 +281,14 @@ function AppContent() {
           <span>{toast.message}</span>
         </div>
       )}
+
+      {/* Chess.com Interactive Engine & Minimax Modal */}
+      <ChessModal
+        isOpen={isChessModalOpen}
+        onClose={() => setIsChessModalOpen(false)}
+        isMinimized={isChessMinimized}
+        onToggleMinimize={() => setIsChessMinimized(!isChessMinimized)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useRef, useCallback } from "react";
 import { mockVideos } from "../data/mockData";
+import { globalTranspositionTable, globalEloEngine } from "../utils/chessAlgorithms";
 
 export const restoreVietnameseTitle = (rawTitle = "", author = "", videoId = "") => {
   if (!rawTitle) return "Video Việt Nam mới nhất";
@@ -1682,6 +1683,10 @@ export const YoutubeProvider = ({ children }) => {
   const [isMiniplayerActive, setIsMiniplayerActive] = useState(false);
   const [lastPlaybackTime, setLastPlaybackTime] = useState(0);
 
+  // Chess.com Algorithmic Engine & Modal States
+  const [isChessModalOpen, setIsChessModalOpen] = useState(false);
+  const [isChessMinimized, setIsChessMinimized] = useState(false);
+
   const [toast, setToast] = useState({ visible: false, message: "" });
   const toastTimerRef = useRef(null);
 
@@ -1843,8 +1848,16 @@ export const YoutubeProvider = ({ children }) => {
       localizedPath += localizedPath.includes("?") ? `&${hl}` : `?${hl}`;
     }
 
-    // Check cache (skip caching for search feeds to keep them completely dynamic and fresh)
+    // Check Transposition Table (64-bit Zobrist Hash Cache)
     const isSearchPath = localizedPath.includes("/api/v1/search");
+    if (!isSearchPath) {
+      const zobristCached = globalTranspositionTable.get(localizedPath);
+      if (zobristCached) {
+        return zobristCached;
+      }
+    }
+
+    // Check cache (skip caching for search feeds to keep them completely dynamic and fresh)
     if (!isSearchPath && apiCache.current[localizedPath]) {
       const cached = apiCache.current[localizedPath];
       if (Date.now() - cached.timestamp < 5 * 60 * 1000) {
@@ -1886,6 +1899,9 @@ export const YoutubeProvider = ({ children }) => {
           value: result,
           timestamp: Date.now()
         };
+        if (!isSearchPath) {
+          globalTranspositionTable.set(localizedPath, result, 600000);
+        }
         return result;
       } finally {
         clearTimeout(tId);
@@ -1966,6 +1982,9 @@ export const YoutubeProvider = ({ children }) => {
             value: res,
             timestamp: Date.now()
           };
+          if (!isSearchPath) {
+            globalTranspositionTable.set(localizedPath, res, 600000);
+          }
           return res;
         } catch (fallbackErr) {
           console.warn(`Fallback failed for ${instance}`, fallbackErr);
@@ -2308,6 +2327,15 @@ export const YoutubeProvider = ({ children }) => {
           "tinh anh liên quân",
           "fifa online 4 việt nam"
         ],
+        "Cờ vua / Chess": [
+          "hikaru nakamura chess highlights",
+          "gothamchess cờ vua phân tích ván đấu hay nhất",
+          "magnus carlsen brilliant chess move",
+          "tùng john cờ vua phân tích grandmaster",
+          "cờ vua việt nam giải vô địch cờ chớp",
+          "học chơi cờ vua từ cơ bản đến nâng cao grandmaster",
+          "những nước đi thiên tài cờ vua đỉnh cao"
+        ],
         "Tin tức": [
           "thời sự vtv24 hôm nay mới nhất",
           "chuyển động 24h vtv24 mới nhất",
@@ -2584,7 +2612,8 @@ export const YoutubeProvider = ({ children }) => {
         return true;
       });
       const personalized = balanceAndDiversifyFeed(uniqueMapped, watchHistoryRef.current, likedVideosRef.current, subscriptionsRef.current, category);
-      let finalVideos = personalized;
+      // Chess.com Elo & Glicko-2 Dynamic Matchmaking + UCB1 Ranking
+      let finalVideos = globalEloEngine.rankFeed(personalized, category);
       
       // Ensure row completion: Pad with high-quality curated videos if less than 16 (always divisible by 4)
       if (!append) {
@@ -2791,6 +2820,10 @@ export const YoutubeProvider = ({ children }) => {
       setBackgroundPage(activePage);
     }
     setIsMiniplayerActive(false);
+
+    try {
+      globalEloEngine.recordEngagement(video, 'watch', 0.5);
+    } catch (e) {}
 
     const isPlaylist = Boolean(video.isPlaylist || video.playlistId || (video.duration && String(video.duration).toLowerCase().includes('video')) || (video.id && (video.id.startsWith('PL') || video.id.startsWith('OLAK') || video.id.startsWith('RD'))));
     const targetPlaylistId = video.playlistId || (isPlaylist && (video.id.startsWith('PL') || video.id.startsWith('OLAK') || video.id.startsWith('RD')) ? video.id : null);
@@ -4483,6 +4516,12 @@ export const YoutubeProvider = ({ children }) => {
         ? prev.filter((id) => id !== videoId)
         : [...prev, videoId];
 
+      if (!isLiked && activeVideo) {
+        try {
+          globalEloEngine.recordEngagement(activeVideo, 'like', 1.0);
+        } catch (e) {}
+      }
+
       if (activeVideo && activeVideo.id === videoId) {
         const diff = isLiked ? -1 : 1;
         const newCount = activeVideo.likesCount + diff;
@@ -4638,6 +4677,12 @@ export const YoutubeProvider = ({ children }) => {
         togglePlaylistLoop,
         togglePlaylistShuffle,
         closePlaylist,
+        isChessModalOpen,
+        setIsChessModalOpen,
+        isChessMinimized,
+        setIsChessMinimized,
+        globalEloEngine,
+        globalTranspositionTable,
       }}
     >
       {children}

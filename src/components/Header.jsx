@@ -22,6 +22,8 @@ const Header = () => {
     handleVideoSelect,
     isNativeMode,
     setIsNativeMode,
+    isChessModalOpen,
+    setIsChessModalOpen,
   } = useContext(YoutubeContext);
 
   const [inputVal, setInputVal] = useState("");
@@ -286,6 +288,20 @@ const Header = () => {
           style={{ display: "flex" }}
         >
           <Mic size={20} />
+        </button>
+
+        {/* Chess.com Launcher Button */}
+        <button
+          className="chess-header-launcher-btn"
+          onClick={() => setIsChessModalOpen(!isChessModalOpen)}
+          title="Chơi cờ vua trực tuyến vs Minimax AI (Chess.com)"
+          aria-label="Chơi cờ vua"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M19 22H5V20H19V22M17 10C15.58 10 14.26 10.77 13.55 12H13V7H16V5H13V2H11V5H8V7H11V16.74L8 18.24V14H6V20H18V13.88C18.65 13.55 19.18 13.06 19.55 12.44C19.84 11.97 20 11.42 20 10.84C20 9.83 19.19 9 18.17 9C17.7 9 17.27 9.17 16.94 9.47L17 10Z" />
+          </svg>
+          <span>Cờ vua</span>
+          <span className="chess-badge">AI</span>
         </button>
 
         {/* Create / Upload video button */}
