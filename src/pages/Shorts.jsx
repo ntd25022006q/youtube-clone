@@ -576,7 +576,7 @@ const Shorts = () => {
       }
 
       setShortsData(prev => {
-        const raw = isInitial ? accumulated : [...prev, ...accumulated];
+        const raw = (isInitial && prev.length === 0) ? accumulated : [...prev, ...accumulated];
         const seen = new Set();
         return raw.filter(item => {
           const vid = item.videoId || item.id;
@@ -589,7 +589,7 @@ const Shorts = () => {
     } catch (e) {
       const fb = getFallbackShorts(seenVideoIds.current.size);
       setShortsData(prev => {
-        const raw = isInitial ? fb : [...prev, ...fb];
+        const raw = (isInitial && prev.length === 0) ? fb : [...prev, ...fb];
         const seen = new Set();
         return raw.filter(item => {
           const vid = item.videoId || item.id;

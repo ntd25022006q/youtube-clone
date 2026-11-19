@@ -671,7 +671,7 @@ const SearchResults = () => {
 
       <div className="search-layout-wrapper">
         <div className="search-results-left">
-          {officialCard && (
+          {!loading && officialCard && (
             <OfficialChannelHeroCard
               card={officialCard}
               onVideoSelect={handleVideoSelect}

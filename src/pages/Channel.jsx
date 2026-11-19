@@ -450,7 +450,11 @@ const Channel = () => {
   const collabShelf = homeShelves.find(s => s.title === "Video cộng tác" || s.type === "collab");
   const forYouShelf = homeShelves.find(s => s.title === "Dành cho bạn");
 
-  if (!activeChannel || (isChannelLoading && (!activeChannel.videos || activeChannel.videos.length === 0))) {
+  const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const targetChannelId = urlParams ? urlParams.get('id') : null;
+  const isTargetChannelMismatch = Boolean(targetChannelId && activeChannel?.id && activeChannel.id !== targetChannelId);
+
+  if (!activeChannel || isTargetChannelMismatch || (isChannelLoading && (!activeChannel.videos || activeChannel.videos.length === 0))) {
     return (
       <div className="channel-page-container" style={{ maxWidth: "1284px", margin: "0 auto", padding: "0 24px 60px 24px" }}>
         {/* Skeleton Banner */}

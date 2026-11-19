@@ -1482,16 +1482,7 @@ export const YoutubeProvider = ({ children }) => {
   // States for pagination, related searches, and home shorts
   const [channelSearchPage, setChannelSearchPage] = useState(1);
   const [relatedSearchPage, setRelatedSearchPage] = useState(1);
-  const [homeShorts, setHomeShorts] = useState(() => {
-    try {
-      const cached = localStorage.getItem("yt_cached_home_shorts");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length >= 5) return parsed;
-      }
-    } catch (e) {}
-    return DEFAULT_HOME_SHORTS;
-  });
+  const [homeShorts, setHomeShorts] = useState(DEFAULT_HOME_SHORTS);
   const [hasMoreChannelVideos, setHasMoreChannelVideos] = useState(true);
   // activeQueries is now handled via a ref to prevent unnecessary re-renders
 
@@ -1554,7 +1545,7 @@ export const YoutubeProvider = ({ children }) => {
   };
 
   // Loading states
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [isChannelLoading, setIsChannelLoading] = useState(false);
 
@@ -1572,14 +1563,9 @@ export const YoutubeProvider = ({ children }) => {
 
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  // Global videos list — pre-seeded with verified high-speed content for 0ms initial load
-  // Stale and poisoned cache is purged to eliminate flickering and outdated placeholders
-  const [videos, setVideos] = useState(() => {
-    try {
-      localStorage.removeItem("yt_cached_home_videos");
-    } catch (e) {}
-    return mockVideos;
-  });
+  // Global videos list — starts empty with shimmer skeletons until fresh live content is fetched
+  // Prevents flashing of mock/stale data on cold load
+  const [videos, setVideos] = useState([]);
 
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [searchQuery, setSearchQuery] = useState(() => {
@@ -1631,9 +1617,13 @@ export const YoutubeProvider = ({ children }) => {
             description: "Kênh công nghệ Tony Phùng Studio - Trải nghiệm và đánh giá các thiết bị công nghệ mới nhất."
           };
         }
+        const cached = safeJsonParse(localStorage.getItem("yt_active_channel"), null);
+        if (cached && (cached.id === id || cached.channelId === id)) {
+          return cached;
+        }
       }
     } catch (e) {}
-    return safeJsonParse(localStorage.getItem("yt_active_channel"), null);
+    return null;
   });
   const [activePage, setActivePage] = useState(() => {
     try {
@@ -2651,6 +2641,7 @@ export const YoutubeProvider = ({ children }) => {
         const mockFallback = searchMockVideos(category === "Tất cả" ? "" : category);
         const safeLen = Math.floor(mockFallback.length / 4) * 4;
         setVideos(mockFallback.slice(0, safeLen || mockFallback.length));
+        setLastFetchedCategory(category);
       }
     } finally {
       if (!append && currentCategoryRequestRef.current === category) {

@@ -270,9 +270,6 @@ const Home = () => {
     navigateTo("shorts");
   };
 
-  const showInitialSkeletons = isLoading && page === 1 && videos.length === 0;
-  const showLoadMoreSkeletons = isFetchingMore;
-
   const isVideoShort = (v) => {
     if (!v) return false;
     if (v.isShort === true) return true;
@@ -283,6 +280,10 @@ const Home = () => {
   };
 
   const validVideos = (videos || []).filter(v => v && v.id && !isVideoShort(v));
+  const isCategoryLoading = (isLoading && page === 1) || (lastFetchedCategory !== selectedCategory);
+  const showInitialSkeletons = isCategoryLoading || (validVideos.length === 0 && isLoading);
+  const showLoadMoreSkeletons = isFetchingMore;
+
   const isAllCategory = selectedCategory === "Tất cả" && homeShorts && homeShorts.length > 0;
   
   // Top videos above Shorts: exactly 6 (2 full rows of 3 videos)
