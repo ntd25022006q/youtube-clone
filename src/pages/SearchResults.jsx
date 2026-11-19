@@ -218,8 +218,8 @@ const OfficialChannelHeroCard = ({ card, onVideoSelect, onChannelSelect, onPlayl
                   <img
                     src={(() => {
                       const t = item.thumbnail || '';
-                      if (!t || t.includes('3dots') || t.includes('skeleton') || t.includes('default-user') || item.title?.includes('Tổng hợp') || item.isPlaylist || item.id?.startsWith('RD')) {
-                        return 'https://i.ytimg.com/vi/FN7ALfpGxiI/hqdefault.jpg';
+                      if (!t || t.includes('3dots') || t.includes('skeleton') || t.includes('default-user')) {
+                        return card.carousel?.[1]?.thumbnail || card.avatar || getFallbackAvatar(card.title);
                       }
                       return t;
                     })()}
@@ -228,11 +228,11 @@ const OfficialChannelHeroCard = ({ card, onVideoSelect, onChannelSelect, onPlayl
                     loading="lazy"
                     onLoad={(e) => {
                       if (e.target.naturalWidth <= 120 && e.target.naturalHeight <= 90) {
-                        e.target.src = 'https://i.ytimg.com/vi/FN7ALfpGxiI/hqdefault.jpg';
+                        e.target.src = card.carousel?.[1]?.thumbnail || card.avatar || getFallbackAvatar(card.title);
                       }
                     }}
                     onError={(e) => {
-                      e.target.src = 'https://i.ytimg.com/vi/FN7ALfpGxiI/hqdefault.jpg';
+                      e.target.src = card.carousel?.[1]?.thumbnail || card.avatar || getFallbackAvatar(card.title);
                     }}
                   />
                   {item.badge && (
@@ -592,8 +592,17 @@ const SearchResults = () => {
   });
 
   // Resolve featured artist and top videos for the right-side panel
-  const featuredChannel = filteredResults.find(item => item.type === "channel") || 
-                          (filteredResults[0]?.type === "video" ? filteredResults[0].channel : null);
+  const featuredChannel = officialCard ? {
+    id: officialCard.channelId,
+    name: officialCard.title,
+    handle: officialCard.handle,
+    subscribers: officialCard.subscribers,
+    avatar: officialCard.avatar,
+    isVerified: true
+  } : (
+    filteredResults.find(item => item.type === "channel") || 
+    (filteredResults[0]?.type === "video" ? filteredResults[0].channel : null)
+  );
 
   const topVideos = filteredResults.filter(item => item.type === "video");
 

@@ -3425,7 +3425,9 @@ export const YoutubeProvider = ({ children }) => {
 
     let rawVidCount = channel.videoCount || 0;
     const nameLower = (channel.name || "").toLowerCase();
-    const isSonTungCh = channel.id === "UClyA28-01x4z60eWQ2kiNbA" || nameLower.includes("sơn tùng") || nameLower.includes("sontung") || nameLower.includes("m-tp");
+    const isSonTungCh = (channel.id === "UClyA28-01x4z60eWQ2kiNbA" && (!nameLower || nameLower.includes("sơn tùng") || nameLower.includes("son tung") || nameLower.includes("m-tp"))) || 
+                        nameLower.includes("sơn tùng") || 
+                        nameLower.includes("sontung");
     if (isSonTungCh) {
       rawVidCount = 221;
     } else if (!rawVidCount) {

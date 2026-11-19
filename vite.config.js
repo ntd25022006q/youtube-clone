@@ -481,8 +481,11 @@ const apiMiddlewaresPlugin = () => ({
                         if (mp.text?.content) metaParts.push(mp.text.content);
                       }
                     }
-                    if (!lThumb || lk.contentId?.startsWith('RD') || lk.contentId?.startsWith('PL') || isPlaylist) {
-                      lThumb = 'https://i.ytimg.com/vi/abPmZCZZrFA/hqdefault.jpg';
+                    if (!lThumb && lk.contentId && !lk.contentId.startsWith('RD') && !lk.contentId.startsWith('PL')) {
+                      lThumb = `https://i.ytimg.com/vi/${lk.contentId}/hqdefault.jpg`;
+                    }
+                    if (!lThumb && av) {
+                      lThumb = av;
                     }
                     carousel.push({
                       id: lk.contentId,

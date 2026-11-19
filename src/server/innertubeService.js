@@ -550,38 +550,36 @@ export async function searchInnerTube(query) {
         const shelf = item.contents?.[0];
         const carousel = [];
 
-        for (const it of shelf?.items || []) {
-          const vId = it.content_id || '';
-          const vTitle = it.metadata?.title?.text || '';
-          let isMixOrPlaylist = vId.startsWith('RD') || vId.startsWith('PL') || vTitle.includes('Tổng hợp') || vTitle.includes('Tuyển tập');
-          let vThumb = it.content_image?.image?.[0]?.url || '';
-          if (!vThumb || isMixOrPlaylist) {
-            vThumb = 'https://i.ytimg.com/vi/abPmZCZZrFA/hq720.jpg';
-          }
-          if (vThumb && vThumb.startsWith('//')) vThumb = `https:${vThumb}`;
-          const vDuration = it.content_image?.overlays?.[0]?.badges?.[0]?.text || (isMixOrPlaylist ? 'Tuyển tập' : '3:30');
-          const vMeta = it.metadata?.metadata?.metadata_rows?.[0]?.metadata_parts?.map(p => p.text?.text).filter(Boolean).join(' • ') || (isMixOrPlaylist ? 'YouTube • Danh sách phát' : 'Sơn Tùng M-TP Official');
-
-          if (vTitle) {
-            carousel.push({
-              id: isMixOrPlaylist ? 'abPmZCZZrFA' : vId,
-              playlistId: isMixOrPlaylist ? vId : undefined,
-              title: vTitle,
-              thumbnail: vThumb,
-              badge: vDuration,
-              meta: vMeta,
-              isPlaylist: isMixOrPlaylist
-            });
-          }
-        }
-
-        const cTitle = header?.title?.text?.text || header?.title?.text || 'Sơn Tùng M-TP';
-        let cAvatar = header?.image?.image?.[0]?.url || 'https://yt3.ggpht.com/ru3SakOhxGBHZnrVeKPwmMndF81j1-gIrsPtmGSHV1YbX3Y6JoFVMR93UdlfpKp9_xIeh62t=s176-c-k-c0x00ffffff-no-rj-mo';
+        const cTitle = header?.title?.text?.text || header?.title?.text || query;
+        let cAvatar = header?.image?.image?.[0]?.url || '';
         if (cAvatar && cAvatar.startsWith('//')) cAvatar = `https:${cAvatar}`;
 
-        let cHandle = '@Sontungmtp';
-        let cSubs = '11,9 Tr người đăng ký';
-        let cVideos = '221 video';
+        // Discover authentic channel ID from buttons/actions or command_context
+        let cChannelId = '';
+        const actionItems = [];
+        if (header?.actions) {
+          if (Array.isArray(header.actions)) {
+            actionItems.push(...header.actions);
+          } else if (Array.isArray(header.actions.actions_rows)) {
+            for (const row of header.actions.actions_rows) {
+              if (Array.isArray(row.actions)) actionItems.push(...row.actions);
+            }
+          }
+        }
+        for (const a of actionItems) {
+          if (a?.channel_id) { cChannelId = a.channel_id; break; }
+          if (a?.on_tap?.payload?.browseId) { cChannelId = a.on_tap.payload.browseId; break; }
+          if (a?.on_tap?.innertube_command?.payload?.browseId) { cChannelId = a.on_tap.innertube_command.payload.browseId; break; }
+        }
+        if (!cChannelId) {
+          cChannelId = item.renderer_context?.command_context?.on_tap?.innertube_command?.payload?.browseId ||
+                       header?.renderer_context?.command_context?.on_tap?.innertube_command?.payload?.browseId ||
+                       header?.title_navigation_endpoint?.payload?.browseId || '';
+        }
+
+        let cHandle = `@${(cTitle || '').toLowerCase().replace(/\s+/g, '')}`;
+        let cSubs = '';
+        let cVideos = '';
 
         const metaRows = header?.metadata?.metadata_rows || [];
         if (metaRows[0]?.metadata_parts?.[0]?.text?.text) {
@@ -593,13 +591,41 @@ export async function searchInnerTube(query) {
           if (parts[1]) cVideos = parts[1].replace(/videos/i, 'video');
         }
 
+        for (const it of shelf?.items || []) {
+          const vId = it.content_id || it.on_tap_endpoint?.payload?.videoId || '';
+          const vTitle = it.metadata?.title?.text || '';
+          let isMixOrPlaylist = vId.startsWith('RD') || vId.startsWith('PL') || vTitle.includes('Tổng hợp') || vTitle.includes('Tuyển tập');
+          let vThumb = it.content_image?.primary_thumbnail?.image?.[0]?.url || it.content_image?.image?.[0]?.url || '';
+          if (vThumb && vThumb.startsWith('//')) vThumb = `https:${vThumb}`;
+          if (!vThumb && vId && !isMixOrPlaylist) {
+            vThumb = `https://i.ytimg.com/vi/${vId}/hq720.jpg`;
+          }
+          if (!vThumb && it.renderer_context?.command_context?.on_tap?.payload?.videoId) {
+            vThumb = `https://i.ytimg.com/vi/${it.renderer_context.command_context.on_tap.payload.videoId}/hq720.jpg`;
+          }
+          const vDuration = it.content_image?.overlays?.[0]?.badges?.[0]?.text || (isMixOrPlaylist ? 'Tuyển tập' : '3:30');
+          const vMeta = it.metadata?.metadata?.metadata_rows?.[0]?.metadata_parts?.map(p => p.text?.text).filter(Boolean).join(' • ') || (isMixOrPlaylist ? 'YouTube • Danh sách phát' : `${cTitle} Official`);
+
+          if (vTitle) {
+            carousel.push({
+              id: isMixOrPlaylist ? (shelf?.items?.[1]?.content_id || vId) : vId,
+              playlistId: isMixOrPlaylist ? vId : undefined,
+              title: vTitle,
+              thumbnail: vThumb || (carousel[0]?.thumbnail || cAvatar),
+              badge: vDuration,
+              meta: vMeta,
+              isPlaylist: isMixOrPlaylist
+            });
+          }
+        }
+
         officialCard = {
           title: cTitle,
           handle: cHandle,
           subscribers: cSubs,
           videoCount: cVideos,
           avatar: cAvatar,
-          channelId: 'UClyA28-01x4z60eWQ2kiNbA',
+          channelId: cChannelId,
           carousel
         };
       } catch (ce) {

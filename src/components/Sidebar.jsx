@@ -50,6 +50,17 @@ const Sidebar = () => {
     handleCategorySelect
   } = useContext(YoutubeContext);
 
+  const sidebarRef = useRef(null);
+  useEffect(() => {
+    if (sidebarRef.current) sidebarRef.current.scrollLeft = 0;
+  }, [isSidebarExpanded, activePage]);
+
+  const handleSidebarScroll = (e) => {
+    if (e.currentTarget.scrollLeft !== 0) {
+      e.currentTarget.scrollLeft = 0;
+    }
+  };
+
   const safeVideos = Array.isArray(videos) ? videos : [];
   const safeSubscriptions = Array.isArray(subscriptions) ? subscriptions : [];
 
@@ -113,17 +124,6 @@ const Sidebar = () => {
       </aside>
     );
   }
-
-  const sidebarRef = useRef(null);
-  useEffect(() => {
-    if (sidebarRef.current) sidebarRef.current.scrollLeft = 0;
-  }, [isSidebarExpanded, activePage]);
-
-  const handleSidebarScroll = (e) => {
-    if (e.currentTarget.scrollLeft !== 0) {
-      e.currentTarget.scrollLeft = 0;
-    }
-  };
 
   const sidebarElement = (
     <aside 

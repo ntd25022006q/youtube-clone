@@ -308,16 +308,18 @@ const Channel = () => {
   const isSubscribed = Boolean(activeChannel?.id && subscriptions.includes(activeChannel.id));
   const channelNameLower = (activeChannel?.name || "").toLowerCase();
   const channelIdStr = String(activeChannel?.id || "");
-  const isArtist = Boolean(
-    activeChannel?.isArtist ||
+  const isSonTung = Boolean(
     channelNameLower.includes("sơn tùng") ||
     channelNameLower.includes("son tung") ||
     channelNameLower.includes("sontung") ||
-    channelNameLower.includes("m-tp") ||
-    channelIdStr === "UClyA28-01x4z60eWQ2kiNbA" ||
-    channelIdStr === "UCIyA28-01x4z60eWQ2kiNbA" ||
-    channelIdStr === "UCGaV49s3N3x3k625aX2Q8sw" ||
+    (channelNameLower.includes("m-tp") && !channelNameLower.includes("vương")) ||
+    (channelIdStr === "UClyA28-01x4z60eWQ2kiNbA" && (!channelNameLower || channelNameLower.includes("sơn tùng"))) ||
     activeChannel?.handle?.toLowerCase() === "@sontungmtp"
+  );
+  const isArtist = Boolean(
+    activeChannel?.isArtist ||
+    (Array.isArray(activeChannel?.releases) && activeChannel.releases.length > 0) ||
+    isSonTung
   );
   const hasReleases = Boolean((Array.isArray(activeChannel?.releases) && activeChannel.releases.length > 0) || isArtist);
 
@@ -522,12 +524,14 @@ const Channel = () => {
 
           <div className="channel-header-stats" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px", fontSize: "14px", color: "#aaa", marginBottom: "8px" }}>
             <span style={{ color: "#fff", fontWeight: "500" }}>
-              {isArtist ? "@Sontungmtp" : (typeof activeChannel.handle === "string" && !activeChannel.handle.startsWith('@UC') ? activeChannel.handle : `@${activeChannel.name ? activeChannel.name.toLowerCase().replace(/\s+/g, '') : (activeChannel.id || "")}`)}
+              {activeChannel.handle && !activeChannel.handle.startsWith('@UC')
+                ? activeChannel.handle
+                : (isSonTung ? "@Sontungmtp" : `@${activeChannel.name ? activeChannel.name.toLowerCase().replace(/\s+/g, '') : (activeChannel.id || "")}`)}
             </span>
             <span>•</span>
-            <span>{activeChannel.subscribers || (isArtist ? "11,9 Tr người đăng ký" : "Nhiều người đăng ký")}</span>
+            <span>{activeChannel.subscribers || (isSonTung ? "11,9 Tr người đăng ký" : "Nhiều người đăng ký")}</span>
             <span>•</span>
-            <span>{isArtist ? "221 video" : (typeof activeChannel.videoCountFormatted === "string" ? activeChannel.videoCountFormatted : `${channelVideos.length} video`)}</span>
+            <span>{activeChannel.videoCountFormatted || (isSonTung ? "221 video" : (activeChannel.videoCount ? `${activeChannel.videoCount} video` : `${channelVideos.length} video`))}</span>
           </div>
 
           {/* Description snippet with "...xem thêm" */}
@@ -537,7 +541,7 @@ const Channel = () => {
             onClick={() => setShowAboutModal(true)}
           >
             <span style={{ display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden", maxWidth: "800px" }}>
-              {activeChannel.description || (isArtist ? "Kênh YouTube chính thức của Sơn Tùng M-TP. Đăng ký để theo dõi các nội dung mới nhất." : (activeChannel.name ? `Chào mừng bạn đến với kênh chính thức của ${activeChannel.name}.` : "Kênh YouTube chính thức."))}
+              {activeChannel.description || (isSonTung ? "Son Tung M-TP Official YouTube Channel - Property of Sơn Tùng M-TP" : (activeChannel.name ? `Chào mừng bạn đến với kênh chính thức của ${activeChannel.name}.` : "Kênh YouTube chính thức."))}
             </span>
             <span style={{ color: "#fff", fontWeight: "600", whiteSpace: "nowrap" }}>...xem thêm</span>
           </div>
@@ -556,7 +560,7 @@ const Channel = () => {
                 <span style={{ color: "#3ea6ff", fontWeight: "600" }}>{primaryLink.title}</span>
                 {linksSuffix ? <span style={{ color: "#fff", marginLeft: "4px" }}>{linksSuffix}</span> : null}
               </span>
-            ) : isArtist ? (
+            ) : isSonTung ? (
               <span>
                 <span style={{ color: "#3ea6ff", fontWeight: "600" }}>Facebook</span>
                 <span style={{ color: "#fff", marginLeft: "4px" }}>và 7 đường liên kết khác</span>
@@ -1678,7 +1682,7 @@ const Channel = () => {
             {/* Modal Header */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
               <h2 style={{ fontSize: "20px", fontWeight: "700", margin: 0, color: "#fff" }}>
-                {activeChannel.name || "Sơn Tùng M-TP Official"}
+                {activeChannel.name || "Kênh chính thức"}
               </h2>
               <button
                 onClick={() => setShowAboutModal(false)}
@@ -1711,10 +1715,10 @@ const Channel = () => {
 
             {/* Links section matching Image 1 */}
             <div style={{ display: "flex", flexDirection: "column", gap: "16px", marginBottom: "24px" }}>
-              {(activeChannel.about?.links && activeChannel.about.links.length > 0 ? activeChannel.about.links : [
+              {(activeChannel.about?.links && activeChannel.about.links.length > 0 ? activeChannel.about.links : (isSonTung ? [
                 { title: "Apple Music", url: "apple.co/2rlSl3w" },
                 { title: "YouTube", url: "youtube.com/c/sontungmtp" }
-              ]).map((lnk, idx) => (
+              ] : [])).map((lnk, idx) => (
                 <a
                   key={idx}
                   href={lnk.url.startsWith("http") ? lnk.url : `https://${lnk.url}`}
@@ -1778,7 +1782,7 @@ const Channel = () => {
                     <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02"></polygon>
                   </svg>
                   <span style={{ fontSize: "14px", color: "#f1f1f1" }}>
-                    www.youtube.com/{activeChannel.handle || "@Sontungmtp"}
+                    www.youtube.com/{activeChannel.handle || (isSonTung ? "@Sontungmtp" : `@${(activeChannel.name || "").toLowerCase().replace(/\s+/g, "")}`)}
                   </span>
                 </div>
 
