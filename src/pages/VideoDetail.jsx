@@ -263,6 +263,7 @@ const VideoDetail = () => {
   // YouTube player states
   const [player, setPlayer] = useState(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -636,6 +637,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
 
   // Init / destroy YT Player when server or video ID changes
   useEffect(() => {
+    setIsPlayerReady(false);
     if (playerServer !== "youtube" || !activeVideoIdRef.current) {
       setPlayer(null); setIsPlaying(false);
       return;
@@ -677,6 +679,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
           events: {
             onReady: (e) => {
               setPlayer(e.target);
+              setIsPlayerReady(true);
               try {
                 e.target.playVideo();
               } catch (playErr) {
@@ -699,6 +702,9 @@ const getPlayableVideoId = (rawId = '', item = null) => {
             },
             onStateChange: (e) => {
               setPlayerState(e.data);
+              if (e.data === 1 || e.data === 2 || e.data === 3) {
+                setIsPlayerReady(true);
+              }
               if (e.data === 1) {
                 setIsPlaying(true);
                 updateAudioTracks(e.target);
@@ -773,7 +779,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
       }
       // Only clear player state if still mounted
       if (mountedRef.current) {
-        setPlayer(null); setIsPlaying(false);
+        setPlayer(null); setIsPlaying(false); setIsPlayerReady(false);
       }
     };
   }, [playerServer, activeVideo?.id]);
@@ -1344,8 +1350,8 @@ const getPlayableVideoId = (rawId = '', item = null) => {
             {playerServer === "youtube" ? (
               <>
                 <div ref={playerSlotRef} className="youtube-player-slot" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
-                {/* Poster Backdrop: Prevents black screen while player initializes */}
-                {!isPlaying && (
+                {/* Poster Backdrop: Only shown while player is initializing, NEVER when paused */}
+                {!isPlayerReady && (
                   <div
                     className="video-player-poster-backdrop"
                     style={{
