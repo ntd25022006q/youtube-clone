@@ -279,7 +279,10 @@ const Home = () => {
     return false;
   };
 
-  const validVideos = (videos || []).filter(v => v && v.id && !isVideoShort(v));
+  const rawValid = (videos || []).filter(v => v && v.id && !isVideoShort(v));
+  // Guarantee perfect 4-column grid row completion across all categories
+  const safeCount = Math.floor(rawValid.length / 4) * 4;
+  const validVideos = rawValid.slice(0, safeCount >= 12 ? safeCount : (rawValid.length >= 4 ? Math.floor(rawValid.length / 4) * 4 : rawValid.length));
   const isCategoryLoading = (isLoading && page === 1) || (lastFetchedCategory !== selectedCategory);
   const showInitialSkeletons = isCategoryLoading || (validVideos.length === 0 && isLoading);
   const showLoadMoreSkeletons = isFetchingMore;

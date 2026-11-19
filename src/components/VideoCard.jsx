@@ -231,10 +231,11 @@ const VideoCard = ({ video }) => {
           {isHovered && !isLive && playableId && (
             <>
               <iframe
-                src={`https://www.youtube-nocookie.com/embed/${playableId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&enablejsapi=1&start=5`}
+                src={`https://www.youtube.com/embed/${playableId}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&playsinline=1`}
                 title={video.title}
                 className="video-hover-preview"
                 allow="autoplay; encrypted-media"
+                onError={() => setIsHovered(false)}
                 style={{
                   position: "absolute",
                   top: 0,

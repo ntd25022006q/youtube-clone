@@ -1863,7 +1863,7 @@ const getPlayableVideoId = (rawId = '', item = null) => {
             {/* Like / Dislike pill (Authentic YouTube parity: no public dislike number count) */}
             <div className="like-dislike-pill">
               <button className={`like-btn-split ${isLiked ? "liked" : ""}`}
-                onClick={() => { if (checkAuth()) toggleLike(currentVideoState.id); }} title="Thích">
+                onClick={() => { if (checkAuth()) toggleLike(currentVideoState); }} title="Thích">
                 <ThumbsUp size={18} className={isLiked ? "fill-icon" : ""} />
                 {currentVideoState.likes ? (
                   <span>{currentVideoState.likes}</span>

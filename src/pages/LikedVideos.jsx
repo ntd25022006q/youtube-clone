@@ -4,7 +4,7 @@ import { Play, Trash2, ThumbsUp, LogIn } from "lucide-react";
 import "./pages.css";
 
 const LikedVideos = () => {
-  const { videos, likedVideos, likedVideosList, handleVideoSelect, toggleLike, currentUser, setShowLoginModal } = useContext(YoutubeContext);
+  const { videos, likedVideos, likedVideosList, watchHistory, handleVideoSelect, toggleLike, currentUser, setShowLoginModal } = useContext(YoutubeContext);
 
   if (!currentUser) {
     return (
@@ -23,14 +23,23 @@ const LikedVideos = () => {
     );
   }
 
-  // Filter videos that are liked (persistent first)
+  // Filter videos that are liked (persistent list first, with fallback to history & feed)
   const safeLikedList = Array.isArray(likedVideosList) ? likedVideosList : [];
   const safeLikedIds = Array.isArray(likedVideos) ? likedVideos : [];
   const safeVideos = Array.isArray(videos) ? videos : [];
+  const safeHistory = Array.isArray(watchHistory) ? watchHistory : [];
 
-  const likedList = safeLikedList.length > 0
-    ? safeLikedList
-    : safeVideos.filter((v) => v && v.id && safeLikedIds.includes(v.id));
+  const candidatePool = [...safeLikedList, ...safeHistory, ...safeVideos];
+  const seenIds = new Set();
+  const likedList = [];
+
+  for (const v of candidatePool) {
+    const vidId = v?.id || v?.videoId;
+    if (vidId && safeLikedIds.includes(vidId) && !seenIds.has(vidId)) {
+      seenIds.add(vidId);
+      likedList.push(v);
+    }
+  }
 
   const handlePlayFirst = () => {
     if (likedList.length > 0) {
@@ -51,10 +60,10 @@ const LikedVideos = () => {
           <div className="playlist-sidebar-card">
             <div className="playlist-cover">
               <img
-                src={likedList[0].thumbnailUrl || `https://i.ytimg.com/vi/${likedList[0].id}/sddefault.jpg`}
+                src={likedList[0].thumbnailUrl || `https://i.ytimg.com/vi/${likedList[0].id || likedList[0].videoId}/sddefault.jpg`}
                 alt="Playlist cover"
                 className="playlist-cover-img"
-                onError={(e) => handleThumbnailError(e, likedList[0].id, likedList[0].title)}
+                onError={(e) => handleThumbnailError(e, likedList[0].id || likedList[0].videoId, likedList[0].title)}
               />
               <div className="cover-overlay" onClick={handlePlayFirst}>
                 <Play size={36} fill="white" />
@@ -74,37 +83,41 @@ const LikedVideos = () => {
 
           {/* Right Playlist Items */}
           <div className="playlist-items-list">
-            {likedList.map((video, index) => (
-              <div
-                key={video.id}
-                className="playlist-item-row"
-                onClick={() => handleVideoSelect(video)}
-              >
-                <span className="item-index">{index + 1}</span>
-                <img
-                  src={video.thumbnailUrl || `https://i.ytimg.com/vi/${video.id}/sddefault.jpg`}
-                  alt={video.title}
-                  className="playlist-item-thumb"
-                  onError={(e) => handleThumbnailError(e, video.id, video.title)}
-                />
-                <div className="playlist-item-info">
-                  <h4>{video.title}</h4>
-                  <p>{video.channel?.name}</p>
-                  <span>{video.views} • {video.uploadedAt}</span>
-                </div>
-                <button
-                  className="icon-btn"
-                  title="Xóa khỏi Video đã thích"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleLike(video);
-                  }}
-                  style={{ marginLeft: "auto", color: "#aaa", background: "transparent", border: "none", cursor: "pointer", padding: "8px" }}
+            {likedList.map((video, index) => {
+              const vId = video.id || video.videoId;
+              const chName = video.channel?.name || video.channelTitle || video.author || (typeof video.channel === 'string' ? video.channel : "YouTube");
+              return (
+                <div
+                  key={vId || index}
+                  className="playlist-item-row"
+                  onClick={() => handleVideoSelect(video)}
                 >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
+                  <span className="item-index">{index + 1}</span>
+                  <img
+                    src={video.thumbnailUrl || (vId ? `https://i.ytimg.com/vi/${vId}/sddefault.jpg` : '')}
+                    alt={video.title}
+                    className="playlist-item-thumb"
+                    onError={(e) => handleThumbnailError(e, vId, video.title)}
+                  />
+                  <div className="playlist-item-info">
+                    <h4>{video.title}</h4>
+                    <p>{chName}</p>
+                    <span>{video.views || "1 Tr lượt xem"} • {video.uploadedAt || "Gần đây"}</span>
+                  </div>
+                  <button
+                    className="icon-btn"
+                    title="Xóa khỏi Video đã thích"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleLike(video);
+                    }}
+                    style={{ marginLeft: "auto", color: "#aaa", background: "transparent", border: "none", cursor: "pointer", padding: "8px" }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

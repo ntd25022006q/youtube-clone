@@ -1628,6 +1628,11 @@ export const YoutubeProvider = ({ children }) => {
     return Array.isArray(val) ? val.filter(s => typeof s === 'string') : [];
   });
 
+  const [likedVideosList, setLikedVideosList] = useState(() => {
+    const val = safeJsonParse(localStorage.getItem("yt_liked_videos_list"), []);
+    return Array.isArray(val) ? val : [];
+  });
+
   const [watchHistory, setWatchHistory] = useState(() => {
     const val = safeJsonParse(localStorage.getItem("yt_watch_history"), []);
     return Array.isArray(val) ? val.slice(0, 200) : []; // cap at 200 entries
@@ -1636,6 +1641,11 @@ export const YoutubeProvider = ({ children }) => {
   const [watchLater, setWatchLater] = useState(() => {
     const val = safeJsonParse(localStorage.getItem("yt_watch_later"), []);
     return Array.isArray(val) ? val.filter(s => typeof s === 'string') : [];
+  });
+
+  const [watchLaterVideos, setWatchLaterVideos] = useState(() => {
+    const val = safeJsonParse(localStorage.getItem("yt_watch_later_videos"), []);
+    return Array.isArray(val) ? val : [];
   });
 
   const [downloadedVideos, setDownloadedVideos] = useState(() => {
@@ -1674,12 +1684,20 @@ export const YoutubeProvider = ({ children }) => {
   }, [likedVideos]);
 
   useEffect(() => {
+    localStorage.setItem("yt_liked_videos_list", JSON.stringify(likedVideosList));
+  }, [likedVideosList]);
+
+  useEffect(() => {
     localStorage.setItem("yt_watch_history", JSON.stringify(watchHistory));
   }, [watchHistory]);
 
   useEffect(() => {
     localStorage.setItem("yt_watch_later", JSON.stringify(watchLater));
   }, [watchLater]);
+
+  useEffect(() => {
+    localStorage.setItem("yt_watch_later_videos", JSON.stringify(watchLaterVideos));
+  }, [watchLaterVideos]);
 
   useEffect(() => {
     localStorage.setItem("yt_downloaded_videos", JSON.stringify(downloadedVideos));
@@ -4304,7 +4322,10 @@ export const YoutubeProvider = ({ children }) => {
       pushHistoryState(pageName, null, null, "");
     }
 
-    if (pageName === "home") {
+    if (pageName === "watch") {
+      setIsSidebarExpanded(false);
+    } else if (pageName === "home") {
+      setIsSidebarExpanded(true);
       if (!isMiniplayerActive && !activeVideo) {
         setActiveVideo(null);
       }
@@ -4352,11 +4373,17 @@ export const YoutubeProvider = ({ children }) => {
     const liked = safeJsonParse(localStorage.getItem(`yt_liked_${safeUser.email}`), []);
     setLikedVideos(Array.isArray(liked) ? liked.filter(s => typeof s === 'string') : []);
 
+    const likedList = safeJsonParse(localStorage.getItem(`yt_liked_list_${safeUser.email}`), []);
+    setLikedVideosList(Array.isArray(likedList) ? likedList : []);
+
     const history = safeJsonParse(localStorage.getItem(`yt_history_${safeUser.email}`), []);
     setWatchHistory(Array.isArray(history) ? history.slice(0, 200) : []);
 
     const later = safeJsonParse(localStorage.getItem(`yt_later_${safeUser.email}`), []);
     setWatchLater(Array.isArray(later) ? later.filter(s => typeof s === 'string') : []);
+
+    const laterVideos = safeJsonParse(localStorage.getItem(`yt_later_list_${safeUser.email}`), []);
+    setWatchLaterVideos(Array.isArray(laterVideos) ? laterVideos : []);
 
     const downloads = safeJsonParse(localStorage.getItem(`yt_downloads_${safeUser.email}`), []);
     if (Array.isArray(downloads) && downloads.length > 0) {
@@ -4396,25 +4423,64 @@ export const YoutubeProvider = ({ children }) => {
     if (currentUser) {
       localStorage.setItem(`yt_subs_${currentUser.email}`, JSON.stringify(subscriptions));
       localStorage.setItem(`yt_liked_${currentUser.email}`, JSON.stringify(likedVideos));
+      localStorage.setItem(`yt_liked_list_${currentUser.email}`, JSON.stringify(likedVideosList));
       localStorage.setItem(`yt_history_${currentUser.email}`, JSON.stringify(watchHistory));
       localStorage.setItem(`yt_later_${currentUser.email}`, JSON.stringify(watchLater));
+      localStorage.setItem(`yt_later_list_${currentUser.email}`, JSON.stringify(watchLaterVideos));
       localStorage.setItem(`yt_downloads_${currentUser.email}`, JSON.stringify(downloadedVideos));
     }
     setCurrentUser(null);
     localStorage.removeItem("yt_user");
     setSubscriptions([]);
     setLikedVideos([]);
+    setLikedVideosList([]);
     setWatchHistory([]);
     setWatchLater([]);
+    setWatchLaterVideos([]);
     setDownloadedVideos([]);
     setNotifications([]);
   };
 
-  const toggleWatchLater = (videoId) => {
+  const toggleWatchLater = (videoOrId) => {
     if (!checkAuth()) return;
+    const videoId = typeof videoOrId === 'object' && videoOrId ? (videoOrId.id || videoOrId.videoId) : videoOrId;
+    if (!videoId) return;
+
     setWatchLater((prev) => {
       const isSaved = prev.includes(videoId);
       return isSaved ? prev.filter(id => id !== videoId) : [...prev, videoId];
+    });
+
+    setWatchLaterVideos((prevList) => {
+      const safeList = Array.isArray(prevList) ? prevList : [];
+      const isPresent = safeList.some(v => (v.id === videoId || v.videoId === videoId));
+      if (isPresent) {
+        return safeList.filter(v => (v.id !== videoId && v.videoId !== videoId));
+      } else {
+        let vObj = (typeof videoOrId === 'object' && videoOrId && (videoOrId.title || videoOrId.name)) ? videoOrId : null;
+        if (!vObj && activeVideo && (activeVideo.id === videoId || activeVideo.videoId === videoId)) {
+          vObj = activeVideo;
+        }
+        if (!vObj) {
+          vObj = (watchHistory || []).find(v => v.id === videoId || v.videoId === videoId);
+        }
+        if (!vObj) {
+          vObj = (videos || []).find(v => v.id === videoId || v.videoId === videoId);
+        }
+        if (!vObj) {
+          vObj = {
+            id: videoId,
+            videoId: videoId,
+            title: activeVideo?.title || "Video xem sau",
+            channel: activeVideo?.channel || { name: activeVideo?.author || "YouTube" },
+            thumbnailUrl: activeVideo?.thumbnailUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+            views: activeVideo?.views || "1 Tr lượt xem",
+            uploadedAt: activeVideo?.uploadedAt || "Gần đây",
+            duration: activeVideo?.duration || "3:30"
+          };
+        }
+        return [vObj, ...safeList.filter(v => (v.id !== videoId && v.videoId !== videoId))];
+      }
     });
   };
 
@@ -4493,23 +4559,34 @@ export const YoutubeProvider = ({ children }) => {
         ? prev.filter((id) => id !== channelId)
         : [...prev, channelId];
       
-      if (activeVideo && activeVideo.channel.id === channelId) {
-        const currentCount = activeVideo.channel.subscribersCount;
-        const newCount = isSubbed ? currentCount - 1 : currentCount + 1;
+      const isCurrentChannel = activeVideo && (
+        activeVideo.channel?.id === channelId ||
+        activeVideo.channel?.name === channelId ||
+        activeVideo.authorId === channelId ||
+        activeVideo.author === channelId
+      );
+
+      if (isCurrentChannel) {
+        const currentCount = typeof activeVideo.channel?.subscribersCount === 'number' && activeVideo.channel.subscribersCount > 0
+          ? activeVideo.channel.subscribersCount
+          : (parseInvidiousCount(activeVideo.channel?.subscribers) || 1200000);
+        const newCount = isSubbed ? Math.max(0, currentCount - 1) : currentCount + 1;
         
         setActiveVideo(prevVideo => ({
           ...prevVideo,
           channel: {
             ...prevVideo.channel,
             subscribersCount: newCount,
-            subscribers: formatSubsVi(newCount, prevVideo.channel.name)
+            subscribers: formatSubsVi(newCount, prevVideo.channel?.name)
           }
         }));
       }
 
-      if (activeChannel && activeChannel.id === channelId) {
-        const currentCount = activeChannel.subscribersCount;
-        const newCount = isSubbed ? currentCount - 1 : currentCount + 1;
+      if (activeChannel && (activeChannel.id === channelId || activeChannel.name === channelId)) {
+        const currentCount = typeof activeChannel.subscribersCount === 'number' && activeChannel.subscribersCount > 0
+          ? activeChannel.subscribersCount
+          : (parseInvidiousCount(activeChannel.subscribers) || 1200000);
+        const newCount = isSubbed ? Math.max(0, currentCount - 1) : currentCount + 1;
         
         setActiveChannel(prevCh => ({
           ...prevCh,
@@ -4522,8 +4599,11 @@ export const YoutubeProvider = ({ children }) => {
     });
   };
 
-  const toggleLike = (videoId) => {
+  const toggleLike = (videoOrId) => {
     if (!checkAuth()) return;
+    const videoId = typeof videoOrId === 'object' && videoOrId ? (videoOrId.id || videoOrId.videoId) : videoOrId;
+    if (!videoId) return;
+
     setLikedVideos((prev) => {
       const isLiked = prev.includes(videoId);
       const newLikes = isLiked
@@ -4537,9 +4617,12 @@ export const YoutubeProvider = ({ children }) => {
         } catch (e) {}
       }
 
-      if (activeVideo && activeVideo.id === videoId) {
+      if (activeVideo && (activeVideo.id === videoId || activeVideo.videoId === videoId)) {
         const diff = isLiked ? -1 : 1;
-        const newCount = activeVideo.likesCount + diff;
+        const currentCount = typeof activeVideo.likesCount === 'number' && !isNaN(activeVideo.likesCount) && activeVideo.likesCount > 0
+          ? activeVideo.likesCount
+          : (parseInt(String(activeVideo.likes || '').replace(/[^0-9]/g, '')) || 124);
+        const newCount = Math.max(0, currentCount + diff);
 
         setActiveVideo(prevVideo => ({
           ...prevVideo,
@@ -4549,6 +4632,38 @@ export const YoutubeProvider = ({ children }) => {
       }
 
       return newLikes;
+    });
+
+    setLikedVideosList((prevList) => {
+      const safeList = Array.isArray(prevList) ? prevList : [];
+      const isPresent = safeList.some(v => (v.id === videoId || v.videoId === videoId));
+      if (isPresent) {
+        return safeList.filter(v => (v.id !== videoId && v.videoId !== videoId));
+      } else {
+        let vObj = (typeof videoOrId === 'object' && videoOrId && (videoOrId.title || videoOrId.name)) ? videoOrId : null;
+        if (!vObj && activeVideo && (activeVideo.id === videoId || activeVideo.videoId === videoId)) {
+          vObj = activeVideo;
+        }
+        if (!vObj) {
+          vObj = (watchHistory || []).find(v => v.id === videoId || v.videoId === videoId);
+        }
+        if (!vObj) {
+          vObj = (videos || []).find(v => v.id === videoId || v.videoId === videoId);
+        }
+        if (!vObj) {
+          vObj = {
+            id: videoId,
+            videoId: videoId,
+            title: activeVideo?.title || "Video đã thích",
+            channel: activeVideo?.channel || { name: activeVideo?.author || "YouTube" },
+            thumbnailUrl: activeVideo?.thumbnailUrl || `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+            views: activeVideo?.views || "1 Tr lượt xem",
+            uploadedAt: activeVideo?.uploadedAt || "Gần đây",
+            duration: activeVideo?.duration || "3:30"
+          };
+        }
+        return [vObj, ...safeList.filter(v => (v.id !== videoId && v.videoId !== videoId))];
+      }
     });
   };
 
@@ -4643,6 +4758,8 @@ export const YoutubeProvider = ({ children }) => {
         subscriptions,
         toggleSubscribe,
         likedVideos,
+        likedVideosList,
+        setLikedVideosList,
         toggleLike,
         addComment,
         watchHistory,
@@ -4662,6 +4779,8 @@ export const YoutubeProvider = ({ children }) => {
         setShowLoginModal,
         checkAuth,
         watchLater,
+        watchLaterVideos,
+        setWatchLaterVideos,
         toggleWatchLater,
         downloadedVideos,
         downloadVideo,

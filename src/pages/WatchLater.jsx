@@ -4,7 +4,7 @@ import { Play, Trash2, Bookmark, LogIn } from "lucide-react";
 import "./pages.css";
 
 const WatchLater = () => {
-  const { videos, watchLater, watchLaterVideos, handleVideoSelect, currentUser, toggleWatchLater, setShowLoginModal } = useContext(YoutubeContext);
+  const { videos, watchLater, watchLaterVideos, watchHistory, handleVideoSelect, currentUser, toggleWatchLater, setShowLoginModal } = useContext(YoutubeContext);
 
   if (!currentUser) {
     return (
@@ -23,14 +23,23 @@ const WatchLater = () => {
     );
   }
 
-  // Filter videos that are saved in watch later list (persistent first)
+  // Filter videos that are saved in watch later list (persistent list first, with fallback to history & feed)
   const safeWatchLaterList = Array.isArray(watchLaterVideos) ? watchLaterVideos : [];
   const safeWatchLaterIds = Array.isArray(watchLater) ? watchLater : [];
   const safeVideos = Array.isArray(videos) ? videos : [];
+  const safeHistory = Array.isArray(watchHistory) ? watchHistory : [];
 
-  const watchLaterList = safeWatchLaterList.length > 0
-    ? safeWatchLaterList
-    : safeVideos.filter((v) => v && v.id && safeWatchLaterIds.includes(v.id));
+  const candidatePool = [...safeWatchLaterList, ...safeHistory, ...safeVideos];
+  const seenIds = new Set();
+  const watchLaterList = [];
+
+  for (const v of candidatePool) {
+    const vidId = v?.id || v?.videoId;
+    if (vidId && safeWatchLaterIds.includes(vidId) && !seenIds.has(vidId)) {
+      seenIds.add(vidId);
+      watchLaterList.push(v);
+    }
+  }
 
   const handlePlayFirst = () => {
     if (watchLaterList.length > 0) {
@@ -51,10 +60,10 @@ const WatchLater = () => {
           <div className="playlist-sidebar-card watch-later-playlist-card">
             <div className="playlist-cover">
               <img
-                src={watchLaterList[0].thumbnailUrl || `https://i.ytimg.com/vi/${watchLaterList[0].id}/sddefault.jpg`}
+                src={watchLaterList[0].thumbnailUrl || `https://i.ytimg.com/vi/${watchLaterList[0].id || watchLaterList[0].videoId}/sddefault.jpg`}
                 alt="Playlist cover"
                 className="playlist-cover-img"
-                onError={(e) => handleThumbnailError(e, watchLaterList[0].id, watchLaterList[0].title)}
+                onError={(e) => handleThumbnailError(e, watchLaterList[0].id || watchLaterList[0].videoId, watchLaterList[0].title)}
               />
               <div className="cover-overlay" onClick={handlePlayFirst}>
                 <Play size={36} fill="white" />
@@ -74,37 +83,41 @@ const WatchLater = () => {
 
           {/* Right Playlist Items */}
           <div className="playlist-items-list">
-            {watchLaterList.map((video, index) => (
-              <div
-                key={video.id}
-                className="playlist-item-row"
-                onClick={() => handleVideoSelect(video)}
-              >
-                <span className="item-index">{index + 1}</span>
-                <img
-                  src={video.thumbnailUrl || `https://i.ytimg.com/vi/${video.id}/sddefault.jpg`}
-                  alt={video.title}
-                  className="playlist-item-thumb"
-                  onError={(e) => handleThumbnailError(e, video.id, video.title)}
-                />
-                <div className="playlist-item-info">
-                  <h4>{video.title}</h4>
-                  <p>{video.channel?.name}</p>
-                  <span>{video.views} • {video.uploadedAt}</span>
-                </div>
-                <button
-                  className="icon-btn"
-                  title="Xóa khỏi Xem sau"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleWatchLater(video);
-                  }}
-                  style={{ marginLeft: "auto", color: "#aaa", background: "transparent", border: "none", cursor: "pointer", padding: "8px" }}
+            {watchLaterList.map((video, index) => {
+              const vId = video.id || video.videoId;
+              const chName = video.channel?.name || video.channelTitle || video.author || (typeof video.channel === 'string' ? video.channel : "YouTube");
+              return (
+                <div
+                  key={vId || index}
+                  className="playlist-item-row"
+                  onClick={() => handleVideoSelect(video)}
                 >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
+                  <span className="item-index">{index + 1}</span>
+                  <img
+                    src={video.thumbnailUrl || (vId ? `https://i.ytimg.com/vi/${vId}/sddefault.jpg` : '')}
+                    alt={video.title}
+                    className="playlist-item-thumb"
+                    onError={(e) => handleThumbnailError(e, vId, video.title)}
+                  />
+                  <div className="playlist-item-info">
+                    <h4>{video.title}</h4>
+                    <p>{chName}</p>
+                    <span>{video.views || "1 Tr lượt xem"} • {video.uploadedAt || "Gần đây"}</span>
+                  </div>
+                  <button
+                    className="icon-btn"
+                    title="Xóa khỏi Xem sau"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleWatchLater(video);
+                    }}
+                    style={{ marginLeft: "auto", color: "#aaa", background: "transparent", border: "none", cursor: "pointer", padding: "8px" }}
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
