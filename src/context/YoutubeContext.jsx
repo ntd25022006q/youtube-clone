@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useRef, useCallback } from "react";
 import { mockVideos } from "../data/mockData";
 import { globalTranspositionTable, globalEloEngine } from "../utils/chessAlgorithms";
+import { globalYouTubeEngine } from "../utils/youtubeRecommendation";
 
 export const restoreVietnameseTitle = (rawTitle = "", author = "", videoId = "") => {
   if (!rawTitle) return "Video Việt Nam mới nhất";
@@ -1275,34 +1276,8 @@ export const balanceAndDiversifyFeed = (allVideos, history = [], likedVideoIds =
 export const getPersonalizedVideos = balanceAndDiversifyFeed;
 
 const getRelatedVideosRelevance = (playingVideo, candidates) => {
-  if (!playingVideo) return candidates;
-
-  const playTitle = (playingVideo.title || "").toLowerCase();
-  const playChannelId = playingVideo.channel.id;
-  const playCategory = playingVideo.category;
-
-  const words = playTitle.split(/\s+/).filter(w => w.length > 2);
-
-  return [...candidates].map(v => {
-    let score = 0;
-
-    if (v.channel && v.channel.id === playChannelId) score += 100;
-    if (v.category && v.category === playCategory) score += 30;
-
-    const vTitle = (v.title || "").toLowerCase();
-    words.forEach(word => {
-      if (vTitle.includes(word)) score += 15;
-    });
-
-    const vDesc = (v.description || "").toLowerCase();
-    words.forEach(word => {
-      if (vDesc.includes(word)) score += 5;
-    });
-
-    return { video: v, score };
-  })
-  .sort((a, b) => b.score - a.score)
-  .map(item => item.video);
+  if (!playingVideo || !Array.isArray(candidates) || candidates.length === 0) return candidates || [];
+  return globalYouTubeEngine.rankWatchNext(playingVideo, candidates);
 };
 
 export const DEFAULT_HOME_SHORTS = [
@@ -2413,8 +2388,23 @@ export const YoutubeProvider = ({ children }) => {
       if (!append && page === 1) {
         let selectedQueries = [];
         if (category === "Tất cả") {
-          // Guarantee diverse viral and high-engagement topics rotated on every refresh
-          selectedQueries = [...queries["Tất cả"]].sort(() => Math.random() - 0.5).slice(0, 6);
+          // Official YouTube candidate generation: sample across diverse content towers
+          const musicPool = queries["Âm nhạc"] || ["sơn tùng mt-p official mv", "nhạc trẻ mới nhất viral triệu view"];
+          const newsPool = queries["Tin tức"] || ["thời sự vtv24 hôm nay mới nhất", "chuyển động 24h vtv24 mới nhất"];
+          const sportsPool = queries["Thể thao"] || ["highlight bóng đá việt nam mới nhất"];
+          const techPool = queries["Công nghệ"] || ["review công nghệ schannel mới nhất"];
+          const chessGamingPool = [...(queries["Cờ vua / Chess"] || []), ...(queries["Trò chơi"] || [])];
+          const generalPool = queries["Tất cả"] || [];
+
+          const pickOne = (arr) => arr[Math.floor(Math.random() * arr.length)];
+          selectedQueries = [
+            pickOne(musicPool),
+            pickOne(newsPool),
+            pickOne(sportsPool),
+            pickOne(techPool),
+            pickOne(chessGamingPool),
+            pickOne(generalPool)
+          ].filter(Boolean);
         } else {
           // Specific category: pick 4 queries
           selectedQueries = [...queryOptions].sort(() => Math.random() - 0.5).slice(0, 4);
@@ -2603,18 +2593,24 @@ export const YoutubeProvider = ({ children }) => {
         seenIds.add(v.id);
         return true;
       });
-      const personalized = balanceAndDiversifyFeed(uniqueMapped, watchHistoryRef.current, likedVideosRef.current, subscriptionsRef.current, category);
-      // Chess.com Elo & Glicko-2 Dynamic Matchmaking + UCB1 Ranking
-      let finalVideos = globalEloEngine.rankFeed(personalized, category);
+      // Merge live results with high-quality padding before ranking so all items undergo anti-clustering
+      let candidatesToRank = uniqueMapped;
+      if (!append && candidatesToRank.length < 24) {
+        const fallbackCandidates = searchMockVideos(category === "Tất cả" ? "" : category);
+        const existingIds = new Set(candidatesToRank.map(v => v.id));
+        const padding = fallbackCandidates.filter(v => !existingIds.has(v.id));
+        candidatesToRank = [...candidatesToRank, ...padding];
+      }
+
+      // Official YouTube Deep Neural Candidate Ranking & Multi-Task Scoring (MMoE)
+      let finalVideos = globalYouTubeEngine.rankHomeFeed(candidatesToRank, category);
+      // Track impression fatigue for anti-repetition penalty (Covington et al. 2016)
+      try {
+        globalYouTubeEngine.recordImpressions(finalVideos.slice(0, 16).map(v => v.id));
+      } catch (e) {}
       
-      // Ensure row completion: Pad with high-quality curated videos if less than 16 (always divisible by 4)
+      // Ensure row completion: always divisible by 4
       if (!append) {
-        if (finalVideos.length < 16) {
-          const fallbackCandidates = searchMockVideos(category === "Tất cả" ? "" : category);
-          const existingIds = new Set(finalVideos.map(v => v.id));
-          const padding = fallbackCandidates.filter(v => !existingIds.has(v.id));
-          finalVideos = [...finalVideos, ...padding];
-        }
         const safeCount = Math.floor(finalVideos.length / 4) * 4;
         finalVideos = finalVideos.slice(0, safeCount >= 12 ? safeCount : 12);
       }
@@ -2637,10 +2633,11 @@ export const YoutubeProvider = ({ children }) => {
       if (signal?.aborted || currentCategoryRequestRef.current !== category) return;
       console.warn("Failed to fetch live feed", e);
       if (!append && currentCategoryRequestRef.current === category) {
-        // Use mock data as fallback so home page is never empty and always divisible by 4
+        // Use mock data as fallback ranked through recommendation engine so home page respects anti-clustering
         const mockFallback = searchMockVideos(category === "Tất cả" ? "" : category);
-        const safeLen = Math.floor(mockFallback.length / 4) * 4;
-        setVideos(mockFallback.slice(0, safeLen || mockFallback.length));
+        const rankedFallback = globalYouTubeEngine.rankHomeFeed(mockFallback, category);
+        const safeLen = Math.floor(rankedFallback.length / 4) * 4;
+        setVideos(rankedFallback.slice(0, safeLen || rankedFallback.length));
         setLastFetchedCategory(category);
       }
     } finally {
@@ -2822,6 +2819,7 @@ export const YoutubeProvider = ({ children }) => {
     setIsMiniplayerActive(false);
 
     try {
+      globalYouTubeEngine.recordWatch(video, 0.5);
       globalEloEngine.recordEngagement(video, 'watch', 0.5);
     } catch (e) {}
 
@@ -4534,6 +4532,7 @@ export const YoutubeProvider = ({ children }) => {
 
       if (!isLiked && activeVideo) {
         try {
+          globalYouTubeEngine.recordLike(activeVideo);
           globalEloEngine.recordEngagement(activeVideo, 'like', 1.0);
         } catch (e) {}
       }
@@ -4709,6 +4708,7 @@ export const YoutubeProvider = ({ children }) => {
         isChessMinimized,
         setIsChessMinimized,
         globalEloEngine,
+        globalYouTubeEngine,
         globalTranspositionTable,
       }}
     >
