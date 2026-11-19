@@ -1735,6 +1735,7 @@ export const YoutubeProvider = ({ children }) => {
   const subscriptionsRef = useRef(subscriptions);
   const activeQueriesRef = useRef([]);
   const trendingAbortController = useRef(null);
+  const currentCategoryRequestRef = useRef("Tất cả");
   const searchAbortController = useRef(null);
   const activeInstanceRef = useRef(activeInstance);
   const instancesRef = useRef(instances);
@@ -2272,6 +2273,7 @@ export const YoutubeProvider = ({ children }) => {
   // API Call: Fetch trending feed for Home page
   const fetchTrending = useCallback(async (category = "Tất cả", page = 1, append = false) => {
     if (!append) {
+      currentCategoryRequestRef.current = category;
       if (trendingAbortController.current) {
         trendingAbortController.current.abort();
       }
@@ -2627,6 +2629,8 @@ export const YoutubeProvider = ({ children }) => {
         finalVideos = finalVideos.slice(0, safeCount >= 12 ? safeCount : 12);
       }
       
+      if (signal?.aborted || currentCategoryRequestRef.current !== category) return;
+      
       if (append) {
         setVideos(prev => {
           const existingIds = new Set(prev.map(v => v.id));
@@ -2640,16 +2644,16 @@ export const YoutubeProvider = ({ children }) => {
         setLastFetchedCategory(category);
       }
     } catch (e) {
-      if (signal?.aborted) return;
+      if (signal?.aborted || currentCategoryRequestRef.current !== category) return;
       console.warn("Failed to fetch live feed", e);
-      if (!append) {
+      if (!append && currentCategoryRequestRef.current === category) {
         // Use mock data as fallback so home page is never empty and always divisible by 4
         const mockFallback = searchMockVideos(category === "Tất cả" ? "" : category);
         const safeLen = Math.floor(mockFallback.length / 4) * 4;
         setVideos(mockFallback.slice(0, safeLen || mockFallback.length));
       }
     } finally {
-      if (!append) {
+      if (!append && currentCategoryRequestRef.current === category) {
         setIsLoading(false);
       }
     }
@@ -4542,21 +4546,32 @@ export const YoutubeProvider = ({ children }) => {
     const trimmed = (text || '').trim().slice(0, 1000); // cap comment length
     if (!trimmed) return;
 
+    const authorName = currentUser?.name || "Người dùng";
+    const authorAvatar = (currentUser?.avatar && !currentUser.avatar.includes("dicebear")) 
+      ? currentUser.avatar 
+      : getFallbackAvatar(authorName);
+
     const newComment = {
       id: `c_${Date.now()}`,
-      author: currentUser.name,
-      avatar: currentUser.avatar,
-      text: trimmed, // already trimmed and length-capped
+      author: authorName,
+      avatar: authorAvatar,
+      text: trimmed,
       uploadedAt: "Vừa xong",
       likes: 0,
+      isOwnComment: true,
     };
 
-    if (activeVideo && activeVideo.id === videoId) {
-      setActiveVideo((prev) => ({
+    setActiveVideo((prev) => {
+      if (!prev) return prev;
+      const currentComments = prev.comments || [];
+      const currentCount = Number(prev.commentCount || currentComments.length);
+      return {
         ...prev,
-        comments: [newComment, ...(prev.comments || [])],
-      }));
-    }
+        comments: [newComment, ...currentComments],
+        commentCount: currentCount + 1,
+      };
+    });
+    showToast("Đã thêm bình luận của bạn!");
   };
 
   const uploadVideo = (newVideo) => {

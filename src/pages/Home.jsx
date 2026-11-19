@@ -178,8 +178,8 @@ const ShortsShelf = ({ shorts, onShortClick }) => {
             msOverflowStyle: "none"
           }}
         >
-          {shorts.map((short) => (
-            <div key={short.id} style={{ flex: "0 0 calc(20% - 13px)", minWidth: "185px", maxWidth: "235px", scrollSnapAlign: "start" }}>
+          {shorts.map((short, idx) => (
+            <div key={`${short.id}_${idx}`} style={{ flex: "0 0 calc(20% - 13px)", minWidth: "185px", maxWidth: "235px", scrollSnapAlign: "start" }}>
               <ShortCard short={short} onShortClick={onShortClick} />
             </div>
           ))}

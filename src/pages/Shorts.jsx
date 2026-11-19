@@ -458,6 +458,8 @@ const Shorts = () => {
   const [shortsData, setShortsData] = useState(() => getFallbackShorts(0));
   const [likedShorts, setLikedShorts] = useState([]);
   const [dislikedShorts, setDislikedShorts] = useState([]);
+  const [likedShortComments, setLikedShortComments] = useState([]);
+  const [dislikedShortComments, setDislikedShortComments] = useState([]);
   const [activeCommentShort, setActiveCommentShort] = useState(null);
   const [shareModalShort, setShareModalShort] = useState(null);
   const [reportModalShort, setReportModalShort] = useState(null);
@@ -471,9 +473,28 @@ const Shorts = () => {
   const containerRef = useRef(null);
   const [isMuted, setIsMuted] = useState(true);
 
+  const toggleLikeShortComment = (commentId) => {
+    if (!checkAuth()) return;
+    setLikedShortComments(prev => 
+      prev.includes(commentId) ? prev.filter(id => id !== commentId) : [...prev, commentId]
+    );
+    setDislikedShortComments(prev => prev.filter(id => id !== commentId));
+  };
+
+  const toggleDislikeShortComment = (commentId) => {
+    if (!checkAuth()) return;
+    setDislikedShortComments(prev => 
+      prev.includes(commentId) ? prev.filter(id => id !== commentId) : [...prev, commentId]
+    );
+    setLikedShortComments(prev => prev.filter(id => id !== commentId));
+  };
+
+  const isFetchingMoreRef = useRef(false);
+
   // Fetch shorts from API, filtering strictly for actual vertical shorts (length <= 75s) and rotating queries
   const fetchShorts = useCallback(async (isInitial = false) => {
-    if (isLoadingMore && !isInitial) return;
+    if (isFetchingMoreRef.current) return;
+    isFetchingMoreRef.current = true;
     if (!isInitial) setIsLoadingMore(true);
 
     try {
@@ -486,33 +507,43 @@ const Shorts = () => {
         queryIndex++;
         attempts++;
 
-        const randomPage = Math.floor(Math.random() * 2) + 1; // page 1 or 2 to ensure high density of results
-
         try {
-          const { data, instance: inst } = await fetchFromInvidious(
-            `/api/v1/search?q=${encodeURIComponent(query)}&type=video&sort=relevance&duration=short&page=${randomPage}`,
-            (res) => Array.isArray(res) && res.length > 0 && res.some(v => v.videoId)
-          );
-          const filtered = (data || [])
-            .filter(item => {
-              if (item.type !== "video" || !item.videoId) return false;
-              // Allow any video up to 120s or with unspecified duration
-              const lengthOk = !item.lengthSeconds || item.lengthSeconds <= 120;
-              const notSeen = !seenVideoIds.current.has(item.videoId);
-              return lengthOk && notSeen;
-            })
-            .map(item => {
-              seenVideoIds.current.add(item.videoId);
-              return mapApiItemToShort(item, inst);
-            })
-            .filter(Boolean);
-
-          if (filtered.length > 0) {
-            accumulated = [...accumulated, ...filtered];
+          // 1. Try local high-speed InnerTube search first
+          const localRes = await fetch(`/api/youtube-search?q=${encodeURIComponent(query)}`);
+          if (localRes.ok) {
+            const resJson = await localRes.json();
+            if (resJson && Array.isArray(resJson.videos) && resJson.videos.length > 0) {
+              const localMapped = resJson.videos
+                .filter(v => v.id && !seenVideoIds.current.has(v.id))
+                .map(v => {
+                  seenVideoIds.current.add(v.id);
+                  const isVerified = (v.channel?.name || "").includes("Official") || (v.views && String(v.views).includes("Tr"));
+                  return {
+                    id: `short_it_${v.id}`,
+                    videoId: v.id,
+                    title: v.title,
+                    description: v.title,
+                    channel: {
+                      id: v.channel?.id || "",
+                      name: v.channel?.name || "Kênh YouTube",
+                      avatar: v.channel?.avatar || getFallbackAvatar(v.channel?.name),
+                      subscribers: v.channel?.subscribers || "750 N người đăng ký",
+                      isVerified
+                    },
+                    views: v.views || "450 N lượt xem",
+                    likes: 12500,
+                    commentsCount: 340,
+                    sharesCount: 120,
+                    comments: generateComments(v.id)
+                  };
+                });
+              if (localMapped.length > 0) {
+                accumulated = [...accumulated, ...localMapped];
+                continue;
+              }
+            }
           }
-        } catch (e) {
-          console.warn("Failed to fetch shorts for query:", query, e);
-        }
+        } catch (localErr) {}
       }
 
       if (accumulated.length === 0) {
@@ -520,77 +551,68 @@ const Shorts = () => {
         accumulated.forEach(s => seenVideoIds.current.add(s.videoId));
       }
 
-      if (isInitial) {
-        setShortsData(accumulated);
-        setIsLoading(false);
-      } else {
-        setShortsData(prev => [...prev, ...accumulated]);
-      }
+      setShortsData(prev => {
+        const raw = isInitial ? accumulated : [...prev, ...accumulated];
+        const seen = new Set();
+        return raw.filter(item => {
+          const vid = item.videoId || item.id;
+          if (!vid || seen.has(vid)) return false;
+          seen.add(vid);
+          return true;
+        });
+      });
+      setIsLoading(false);
     } catch (e) {
       const fb = getFallbackShorts(seenVideoIds.current.size);
-      if (isInitial) {
-        setShortsData(fb);
-        setIsLoading(false);
-      } else {
-        setShortsData(prev => [...prev, ...fb]);
-      }
+      setShortsData(prev => {
+        const raw = isInitial ? fb : [...prev, ...fb];
+        const seen = new Set();
+        return raw.filter(item => {
+          const vid = item.videoId || item.id;
+          if (!vid || seen.has(vid)) return false;
+          seen.add(vid);
+          return true;
+        });
+      });
+      setIsLoading(false);
     } finally {
+      isFetchingMoreRef.current = false;
       setIsLoadingMore(false);
     }
-  }, [isLoadingMore, fetchFromInvidious]);
+  }, []);
 
   // Initial load or handle activeShortId transitions with 0ms instant playback
   useEffect(() => {
-    const init = async () => {
-      if (activeShortId) {
-        // Immediate instant setup: never show black loading screen
-        const matchFallback = FALLBACK_SHORTS_DATA.find(s => s.videoId === activeShortId);
-        const instantActive = matchFallback || {
-          id: activeShortId,
-          videoId: activeShortId,
-          title: "Video Shorts thịnh hành",
-          channel: {
-            id: "channel_" + activeShortId,
-            name: "Kênh Shorts",
-            avatar: getFallbackAvatar("Shorts")
-          },
-          likes: "180 N",
-          commentsCount: "1,2 N",
-          shares: "35 N"
-        };
+    if (activeShortId) {
+      const matchFallback = FALLBACK_SHORTS_DATA.find(s => s.videoId === activeShortId);
+      const instantActive = matchFallback || {
+        id: activeShortId,
+        videoId: activeShortId,
+        title: "Video Shorts thịnh hành",
+        channel: {
+          id: "channel_" + activeShortId,
+          name: "Kênh Shorts",
+          avatar: getFallbackAvatar("Shorts")
+        },
+        likes: "180 N",
+        commentsCount: "1,2 N",
+        shares: "35 N",
+        comments: generateComments(activeShortId)
+      };
 
-        seenVideoIds.current.add(activeShortId);
-        setShortsData(prev => [instantActive, ...prev.filter(s => s.videoId !== activeShortId)]);
-        setCurrentIndex(0);
-        setIsLoading(false);
-        setActiveShortId(null);
-
-        // Background parallel metadata enhancement
-        try {
-          const { data: details, instance: inst } = await fetchFromInvidious(`/api/v1/videos/${activeShortId}`);
-          if (details && details.videoId) {
-            const mapped = mapApiItemToShort(details, inst);
-            if (mapped) {
-              setShortsData(prev => prev.map(s => s.videoId === activeShortId ? mapped : s));
-            }
-          }
-        } catch (e) {
-          console.warn("Background active short metadata fetch:", e);
-        }
-
-        // Background fetch additional shorts smoothly
-        fetchShorts(false);
-      } else {
-        // Background fetch fresh shorts without blocking initial playback
-        fetchShorts(false);
-      }
-    };
-    init();
-  }, [activeShortId, fetchShorts, fetchFromInvidious]);
+      seenVideoIds.current.add(activeShortId);
+      setShortsData(prev => [instantActive, ...prev.filter(s => s.videoId !== activeShortId)]);
+      setCurrentIndex(0);
+      setIsLoading(false);
+      setActiveShortId(null);
+    } else {
+      fetchShorts(true);
+    }
+  }, [activeShortId, fetchShorts]);
 
   // When approaching end, fetch more
   useEffect(() => {
-    if (shortsData.length > 0 && currentIndex >= shortsData.length - 3) {
+    if (shortsData.length > 0 && currentIndex >= shortsData.length - 2) {
       fetchShorts(false);
     }
   }, [currentIndex, shortsData.length, fetchShorts]);
@@ -820,7 +842,7 @@ const Shorts = () => {
         const isDisliked = dislikedShorts.includes(short.id);
 
         return (
-          <div key={short.id} className="shorts-single-view" data-index={idx}>
+          <div key={`${short.id || short.videoId}_${idx}`} className="shorts-single-view" data-index={idx}>
             <div className="short-video-and-actions">
               {/* 9:16 Vertical Video Frame */}
               <div className="short-video-player-frame">

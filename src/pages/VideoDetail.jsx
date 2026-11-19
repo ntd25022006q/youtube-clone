@@ -1309,10 +1309,12 @@ const getPlayableVideoId = (rawId = '', item = null) => {
     if (isLiked) toggleLike(currentVideoState.id);
   };
 
-  // Sort comments
-  const sortedComments = [...(currentVideoState.comments || [])].sort((a, b) =>
-    sortOrder === "new" ? 0 : (b.likes || 0) - (a.likes || 0)
-  );
+  // Sort comments: Own newly posted comments ALWAYS stay at the very top!
+  const sortedComments = [...(currentVideoState.comments || [])].sort((a, b) => {
+    if (a.isOwnComment && !b.isOwnComment) return -1;
+    if (!a.isOwnComment && b.isOwnComment) return 1;
+    return sortOrder === "new" ? 0 : (b.likes || 0) - (a.likes || 0);
+  });
 
   return (
     <div className={`video-detail-page ${isTheaterMode ? "theater-mode" : ""} ${isMiniplayerActive ? "miniplayer-active" : ""}`}>
@@ -1342,6 +1344,25 @@ const getPlayableVideoId = (rawId = '', item = null) => {
             {playerServer === "youtube" ? (
               <>
                 <div ref={playerSlotRef} className="youtube-player-slot" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }} />
+                {/* Poster Backdrop: Prevents black screen while player initializes */}
+                {!isPlaying && (
+                  <div
+                    className="video-player-poster-backdrop"
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      backgroundImage: `url(${currentVideoState.thumbnailUrl || (playableId ? `https://i.ytimg.com/vi/${playableId}/hqdefault.jpg` : '')})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      zIndex: 1,
+                      pointerEvents: "none",
+                      transition: "opacity 0.3s ease"
+                    }}
+                  />
+                )}
                 {/* Transparent Click Shield: covers entire player area and prevents clicks from reaching native YouTube iframe, allowing crystal clear video and subtitles with zero black masks */}
                 <div
                   className="video-player-click-shield"
@@ -2231,8 +2252,8 @@ const getPlayableVideoId = (rawId = '', item = null) => {
         <div className="related-videos-list">
           {isDetailsLoading
             ? Array.from({ length: 5 }).map((_, i) => <RelatedVideoSkeleton key={i} />)
-            : relatedVideos.map(video => (
-              <div key={video.id} className="related-video-card" 
+            : relatedVideos.map((video, idx) => (
+              <div key={`${video.id}_${idx}`} className="related-video-card" 
                 onClick={() => handleVideoSelect(video)}
                 onMouseEnter={() => { prefetchVideo(video); prefetchChannel(video.channel); }}
               >
