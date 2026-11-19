@@ -261,7 +261,10 @@ function AppContent() {
       <div className="main-layout">
         {/* Render Sidebar only in custom Pro mode */}
         {!showNative && (activePage !== "watch" || isSidebarExpanded) && <Sidebar />}
-        <main className={`content-area ${showNative || activePage === "watch" ? "no-sidebar" : (!isSidebarExpanded || activePage === "shorts" ? "collapsed" : "")}`} style={showNative ? { padding: 0, margin: 0, maxWidth: "100%", width: "100%", height: "calc(100vh - 56px)" } : {}}>
+        <main 
+          className={`content-area ${showNative || activePage === "watch" ? "no-sidebar" : (!isSidebarExpanded || activePage === "shorts" ? "collapsed" : "")}`} 
+          style={showNative ? { padding: 0, margin: 0, maxWidth: "100%", width: "100%", height: "calc(100vh - 56px)" } : (activePage === "shorts" ? { padding: 0, overflowX: "hidden" } : {})}
+        >
           {renderPage()}
         </main>
       </div>

@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect, useRef, useCallback } from "react";
-import { ThumbsUp, ThumbsDown, MessageSquare, Share2, MoreVertical, X, Send, ChevronDown, ChevronUp, Play, Pause, Volume2, VolumeX, Heart, EyeOff, Flag, FileText } from "lucide-react";
+import { ThumbsUp, ThumbsDown, MessageSquare, Share2, MoreVertical, X, Send, ChevronDown, ChevronUp, Play, Pause, Volume2, VolumeX, Heart, EyeOff, Flag, FileText, Music } from "lucide-react";
 import { YoutubeContext, getFallbackAvatar, handleThumbnailError } from "../context/YoutubeContext";
 import { ShareModal, ReportModal } from "../components/Modals";
 import "./pages.css";
@@ -42,6 +42,29 @@ const formatShortLikes = (count) => {
     return `${val.toFixed(val % 1 === 0 ? 0 : 1).replace('.', ',')} N`;
   }
   return `${count}`;
+};
+
+const parseViewsNum = (viewsStr) => {
+  if (typeof viewsStr === "number") return viewsStr;
+  const s = String(viewsStr || "").toLowerCase();
+  const numMatch = s.match(/([0-9]+([.,][0-9]+)?)/);
+  if (!numMatch) return 100000;
+  const val = parseFloat(numMatch[1].replace(",", "."));
+  if (s.includes("tr") || s.includes("m")) return Math.round(val * 1000000);
+  if (s.includes("n") || s.includes("k")) return Math.round(val * 1000);
+  return Math.round(val);
+};
+
+const getMetricsFromSeed = (videoId, viewsStr) => {
+  let seed = 0;
+  for (let c of (videoId || "short")) seed = c.charCodeAt(0) + ((seed << 5) - seed);
+  seed = Math.abs(seed);
+  const approxViews = parseViewsNum(viewsStr);
+  const likeRatio = 0.04 + ((seed % 50) / 1000); // 4% to 9%
+  const likes = Math.max(120, Math.round(approxViews * likeRatio));
+  const commentRatio = 0.01 + ((seed % 20) / 1000); // 1% to 3% of likes
+  const commentsCount = Math.max(15, Math.round(likes * commentRatio));
+  return { likes, commentsCount };
 };
 
 const VIETNAMESE_COMMENTS = [
@@ -310,10 +333,10 @@ const ShortPlayer = ({ videoId, isActive, isMuted, onMuteToggle, onLikeToggle, t
       <iframe
         ref={iframeRef}
         id={`short-iframe-${videoId}`}
-        src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=${isActive ? 1 : 0}&mute=${isMuted ? 1 : 0}&loop=1&playlist=${videoId}&controls=0&hl=vi&enablejsapi=1`}
+        src={`https://www.youtube.com/embed/${videoId}?autoplay=${isActive ? 1 : 0}&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${videoId}&playsinline=1&rel=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}`}
         title={title}
         frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         className="short-video-iframe"
         onLoad={() => {
           setIsLoaded(true);
@@ -518,6 +541,7 @@ const Shorts = () => {
                 .map(v => {
                   seenVideoIds.current.add(v.id);
                   const isVerified = (v.channel?.name || "").includes("Official") || (v.views && String(v.views).includes("Tr"));
+                  const metrics = getMetricsFromSeed(v.id, v.views);
                   return {
                     id: `short_it_${v.id}`,
                     videoId: v.id,
@@ -530,10 +554,10 @@ const Shorts = () => {
                       subscribers: v.channel?.subscribers || "750 N người đăng ký",
                       isVerified
                     },
-                    views: v.views || "450 N lượt xem",
-                    likes: 12500,
-                    commentsCount: 340,
-                    sharesCount: 120,
+                    views: v.views || "450 N",
+                    likes: metrics.likes,
+                    commentsCount: metrics.commentsCount,
+                    sharesCount: Math.round(metrics.likes * 0.1),
                     comments: generateComments(v.id)
                   };
                 });
@@ -585,6 +609,7 @@ const Shorts = () => {
   useEffect(() => {
     if (activeShortId) {
       const matchFallback = FALLBACK_SHORTS_DATA.find(s => s.videoId === activeShortId);
+      const metrics = getMetricsFromSeed(activeShortId, "650 N");
       const instantActive = matchFallback || {
         id: activeShortId,
         videoId: activeShortId,
@@ -594,9 +619,10 @@ const Shorts = () => {
           name: "Kênh Shorts",
           avatar: getFallbackAvatar("Shorts")
         },
-        likes: "180 N",
-        commentsCount: "1,2 N",
-        shares: "35 N",
+        views: "650 N",
+        likes: metrics.likes,
+        commentsCount: metrics.commentsCount,
+        shares: Math.round(metrics.likes * 0.1),
         comments: generateComments(activeShortId)
       };
 
@@ -780,11 +806,10 @@ const Shorts = () => {
 
   if (shortsData.length === 0) return null;
 
-  const counterLeft = isSidebarExpanded ? "calc(240px + 32px)" : "calc(72px + 32px)";
-
   return (
     <div className="shorts-page-container" ref={containerRef} style={{
       overflowY: "scroll",
+      overflowX: "hidden",
       scrollSnapType: "y mandatory",
       height: "calc(100vh - 56px)",
       scrollBehavior: "smooth",
@@ -801,6 +826,7 @@ const Shorts = () => {
         .shorts-page-container {
           -ms-overflow-style: none;
           scrollbar-width: none;
+          overflow-x: hidden !important;
         }
         .shorts-single-view {
           height: calc(100vh - 56px);
@@ -907,41 +933,18 @@ const Shorts = () => {
                     </button>
                   </div>
                   <h3 className="short-video-title-overlay">{short.title}</h3>
-                  <p className="short-video-views-overlay">{short.views} lượt xem</p>
+                  <p className="short-video-views-overlay">
+                    {String(short.views || "").replace(/(lượt\s*xem\s*)+/gi, "").trim()} lượt xem
+                  </p>
+                  <div className="short-audio-pill" title={`${short.channel?.name || "Kênh"} • Âm thanh gốc`}>
+                    <Music size={13} className="short-audio-icon" />
+                    <span className="short-audio-text">{short.channel?.name || "Kênh"} • Âm thanh gốc</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Vertical Actions Panel */}
+              {/* Vertical Actions Panel (YouTube Desktop Parity: strictly standard actions) */}
               <div className="short-actions-sidebar">
-                {/* Channel Avatar */}
-                <div 
-                    className="short-channel-avatar-wrapper" 
-                    title={short.channel.name}
-                    style={{ cursor: "pointer" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleChannelSelect({
-                        id: short.channel.id,
-                        name: short.channel.name,
-                        avatar: short.channel.avatar,
-                        handle: getCommentHandle(short.channel.name || short.channel.id)
-                      });
-                    }}
-                  >
-                  <img
-                    src={short.channel.avatar}
-                    alt={short.channel.name}
-                    className="short-sidebar-channel-avatar" referrerPolicy="no-referrer"
-                    onError={e => { e.target.src = getFallbackAvatar(short.channel.name); }}
-                  />
-                  <button
-                    className={`short-sidebar-subscribe-dot ${isSubbed ? "subbed" : ""}`}
-                    onClick={() => toggleSubscribe(short.channel.id)}
-                  >
-                    {isSubbed ? "✓" : "+"}
-                  </button>
-                </div>
-
                 {/* Like */}
                 <div className="short-action-pill-wrapper">
                   <button
@@ -1047,32 +1050,32 @@ const Shorts = () => {
                 </div>
               </div>
             </div>
-
-            {/* Up/Down Navigation Arrows */}
-            <div className="shorts-nav-arrows">
-              <button
-                className="shorts-arrow-btn"
-                onClick={goPrev}
-                disabled={currentIndex === 0}
-                title="Short trước"
-              >
-                <ChevronUp size={28} />
-              </button>
-              <button
-                className="shorts-arrow-btn"
-                onClick={goNext}
-                title="Short tiếp theo"
-              >
-                {isLoadingMore ? (
-                  <div className="spinner" style={{ width: 20, height: 20 }}></div>
-                ) : (
-                  <ChevronDown size={28} />
-                )}
-              </button>
-            </div>
           </div>
         );
       })}
+
+      {/* Up/Down Navigation Arrows (Single Fixed Overlay for Desktop YouTube Parity) */}
+      <div className="shorts-nav-arrows">
+        <button
+          className="shorts-arrow-btn"
+          onClick={goPrev}
+          disabled={currentIndex === 0}
+          title="Short trước"
+        >
+          <ChevronUp size={24} />
+        </button>
+        <button
+          className="shorts-arrow-btn"
+          onClick={goNext}
+          title="Short tiếp theo"
+        >
+          {isLoadingMore ? (
+            <div className="spinner" style={{ width: 18, height: 18 }}></div>
+          ) : (
+            <ChevronDown size={24} />
+          )}
+        </button>
+      </div>
 
       {/* Comments Panel */}
       {activeCommentShort && (
@@ -1081,14 +1084,42 @@ const Shorts = () => {
             <div className="panel-header">
               <h3>
                 Bình luận{" "}
-                <span style={{ fontSize: "14px", color: "#aaa", fontWeight: 400 }}>
+                <span className="panel-header-count">
                   ({formatShortLikes(activeCommentShort.commentsCount)})
                 </span>
               </h3>
-              <button className="panel-close-btn" onClick={() => setActiveCommentShort(null)}>
+              <button className="panel-close-btn" onClick={() => setActiveCommentShort(null)} title="Đóng">
                 <X size={20} />
               </button>
             </div>
+
+            {/* Comment Form at TOP under header (Desktop YouTube parity) */}
+            <form onSubmit={(e) => handleAddComment(e, activeCommentShort.id)} className="panel-comment-form">
+              <img
+                src={currentUser ? currentUser.avatar : getFallbackAvatar("Guest")}
+                alt="Avatar"
+                className="panel-form-avatar"
+                onError={e => { e.target.src = getFallbackAvatar("Guest"); }}
+              />
+              <div className="panel-input-container">
+                <input
+                  type="text"
+                  placeholder="Thêm bình luận..."
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  className="panel-input-field"
+                  onFocus={() => { if (!checkAuth()) { document.activeElement.blur(); } }}
+                />
+                <button
+                  type="submit"
+                  disabled={!newCommentText.trim()}
+                  className="panel-submit-btn"
+                  title="Gửi bình luận"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </form>
 
             <div className="panel-comments-list">
               {activeCommentShort.comments.length === 0 ? (
@@ -1133,33 +1164,6 @@ const Shorts = () => {
                 ))
               )}
             </div>
-
-            {/* Comment Form */}
-            <form onSubmit={(e) => handleAddComment(e, activeCommentShort.id)} className="panel-comment-form">
-              <img
-                src={currentUser ? currentUser.avatar : getFallbackAvatar("Guest")}
-                alt="Avatar"
-                className="panel-form-avatar"
-                onError={e => { e.target.src = getFallbackAvatar("Guest"); }}
-              />
-              <div className="panel-input-container">
-                <input
-                  type="text"
-                  placeholder="Thêm bình luận..."
-                  value={newCommentText}
-                  onChange={(e) => setNewCommentText(e.target.value)}
-                  className="panel-input-field"
-                  onFocus={() => { if (!checkAuth()) { document.activeElement.blur(); } }}
-                />
-                <button
-                  type="submit"
-                  disabled={!newCommentText.trim()}
-                  className="panel-submit-btn"
-                >
-                  <Send size={16} />
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}

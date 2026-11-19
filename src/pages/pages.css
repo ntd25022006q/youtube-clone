@@ -2637,18 +2637,27 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: calc(100% + 48px); /* Negate content-area's 24px padding on each side */
-  margin: -24px;
+  width: 100%;
+  min-height: calc(100vh - var(--header-height));
+  height: calc(100vh - var(--header-height));
   background-color: #0f0f0f;
   position: relative;
-  overflow: hidden;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 /* Single-view Shorts layout */
 .shorts-single-view {
+  height: calc(100vh - var(--header-height));
+  min-height: calc(100vh - var(--header-height));
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
   display: flex;
-  align-items: flex-end;
-  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 0;
   position: relative;
 }
 
@@ -2759,19 +2768,22 @@
   display: flex;
   align-items: flex-end;
   gap: 16px;
-  height: 600px;
+  height: 640px;
+  max-height: calc(100vh - 90px);
   width: fit-content;
   position: relative;
 }
 
 .short-video-player-frame {
   position: relative;
-  width: 340px;
-  height: 600px;
+  width: 360px;
+  height: 640px;
+  max-height: calc(100vh - 90px);
+  aspect-ratio: 9 / 16;
   border-radius: 16px;
   overflow: hidden;
   background-color: #000;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
 .short-video-iframe {
@@ -2837,6 +2849,36 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.short-audio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 14px;
+  font-size: 11.5px;
+  color: #fff;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.short-audio-icon {
+  flex-shrink: 0;
+  color: #fff;
+  opacity: 0.9;
+}
+
+.short-audio-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .short-actions-sidebar {
@@ -2907,25 +2949,28 @@
   height: 48px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.shorts-arrow-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+.shorts-arrow-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.22);
+  transform: scale(1.06);
 }
 
-.shorts-arrow-btn:active {
-  transform: scale(0.9);
+.shorts-arrow-btn:active:not(:disabled) {
+  transform: scale(0.94);
 }
 
 .shorts-arrow-btn:disabled {
-  opacity: 0.3;
+  opacity: 0.25;
   cursor: not-allowed;
 }
 
@@ -2953,28 +2998,36 @@
   padding: 16px;
 }
 
-/* Slide-out Comments Panel for Shorts */
+/* Slide-out Comments Panel for Shorts (Desktop YouTube Parity) */
 .shorts-comments-panel-overlay {
   position: fixed;
-  top: 0;
+  top: var(--header-height);
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.4);
-  z-index: 200;
+  background-color: rgba(0, 0, 0, 0.35);
+  z-index: 1000;
   display: flex;
   justify-content: flex-end;
 }
 
 .shorts-comments-panel {
-  width: 400px;
+  width: 440px;
+  max-width: 100%;
   height: 100%;
   background-color: #0f0f0f;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
   display: flex;
   flex-direction: column;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.5);
-  animation: slideIn 0.3s ease-out;
+  box-shadow: -8px 0 24px rgba(0, 0, 0, 0.6);
+  animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.panel-header-count {
+  font-size: 14px;
+  color: #aaa;
+  font-weight: 400;
+  margin-left: 6px;
 }
 
 @keyframes slideIn {
@@ -3085,9 +3138,10 @@
 
 .panel-comment-form {
   display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background-color: #0f0f0f;
 }
 
